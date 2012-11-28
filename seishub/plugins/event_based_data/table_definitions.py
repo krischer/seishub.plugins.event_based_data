@@ -42,7 +42,7 @@ class ChannelsTable(Base):
     channel = Column(String, nullable=False, index=True)
     latitude = Column(Float, nullable=True, index=True)
     longitude = Column(Float, nullable=True, index=True)
-    depth_in_m = Column(Float, nullable=True, index=True)
+    elevation_in_m = Column(Float, nullable=True, index=True)
 
 
 class FilepathsTable(Base):
