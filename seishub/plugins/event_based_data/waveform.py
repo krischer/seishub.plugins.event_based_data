@@ -11,7 +11,10 @@ from obspy.core import read
 import os
 from sqlalchemy import Table
 
-from table_definitions import FilepathsTable, ChannelsTable
+from table_definitions import FilepathsTable, ChannelsTable, \
+    WaveformChannelsTable
+
+lowercase_true_strings = ("true", "yes", "y")
 
 
 class WaveformUploader(Component):
@@ -27,6 +30,9 @@ class WaveformUploader(Component):
     A full upload URL can look like this:
 
     SEISHUB_SERVER/event_based_data/waveform/upload?event_resource_name=event_1
+
+    By default the data will be assumed to be real data. Passing
+    is_synthetic=true to the URL will make it a synthetic waveform.
 
     Waveforms will be stored in the path specified in the config file at:
         [event_based_data] waveform_filepath
@@ -59,8 +65,16 @@ class WaveformUploader(Component):
         Function that will be called upon receiving a POST request for the
         aforementioned URL.
         """
-        # Every waveform MUST be bound to an event.
+        # Parse the given parameters.
         event_id = request.args0.get("event_resource_name", None)
+        is_synthetic = request.args0.get("is_synthetic", None)
+        if isinstance(is_synthetic, basestring) and \
+            is_synthetic.lower() in lowercase_true_strings:
+            is_synthetic = True
+        else:
+            is_synthetic = False
+
+        # Every waveform MUST be bound to an event.
         if event_id is None:
             msg = ("No event_resource_name parameter passed. Every waveform "
                 "must be bound to an existing event.")
@@ -144,8 +158,10 @@ class WaveformUploader(Component):
         # Wrap in try/except and rollback changes in case something fails.
         try:
             # Add information about the uploaded file into the database.
-            session.add(FilepathsTable(filepath=filename, size=len(data),
-                mtime=datetime.datetime.now(), md5_hash=md5_hash))
+            filepath = FilepathsTable(filepath=filename, size=len(data),
+                mtime=datetime.datetime.now(), md5_hash=md5_hash)
+            session.add(filepath)
+            session.commit()
             # Loop over all traces in the file.
             for trace in st:
                 stats = trace.stats
@@ -186,12 +202,22 @@ class WaveformUploader(Component):
                     channel.elevation_in_m = ele
                 session.add(channel)
                 session.commit()
+
+                waveform_channel = WaveformChannelsTable(channel_id=channel.id,
+                    filepath_id=filepath.id, event_resource_id=event_id,
+                    starttime=stats.starttime.datetime,
+                    endtime=stats.endtime.datetime,
+                    sampling_rate=stats.sampling_rate, format=stats._format,
+                    is_synthetic=is_synthetic)
+                session.add(waveform_channel)
+
+                session.commit()
         except Exception, e:
             # Rollback session.
             session.rollback()
             session.close()
             # Remove the file if something failes..
             os.remove(filename)
-            msg = e.message + "\nRolling back changes."
+            msg = e.message + " Rolling back all changes."
             raise InternalServerError(msg)
         session.close()
