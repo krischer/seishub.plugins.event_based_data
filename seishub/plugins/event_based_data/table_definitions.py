@@ -58,12 +58,12 @@ class FilepathsTable(Base):
     md5_hash = Column(String, nullable=False)
 
 
-class InstrumentResponsesTable(Base):
+class ChannelInformationTable(Base):
     """
     Table storing information about the channels. Every continuous interval
     will have a seperate entry even if they reside in the same file.
     """
-    __tablename__ = "ebd_instrument_responses"
+    __tablename__ = "ebd_channel_information"
     # Every channel can only appear once
     __table_args__ = (UniqueConstraint("channel_id", "filepath_id",
         "starttime", "endtime"), {})
