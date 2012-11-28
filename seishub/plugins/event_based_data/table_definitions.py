@@ -12,13 +12,9 @@ with "ebd_" to indicate it is part of the event_based_data plugin.
 """
 
 from sqlalchemy import ForeignKey, Column, Integer, DateTime, Float, String, \
-    PickleType, Boolean
+    Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relation
-from obspy.core import Trace, UTCDateTime
-import numpy as np
 from sqlalchemy.schema import UniqueConstraint
-import pickle
 
 
 Base = declarative_base()
@@ -58,12 +54,12 @@ class FilepathsTable(Base):
     md5_hash = Column(String, nullable=False)
 
 
-class ChannelInformationTable(Base):
+class ChannelMetadataTable(Base):
     """
     Table storing information about the channels. Every continuous interval
     will have a seperate entry even if they reside in the same file.
     """
-    __tablename__ = "ebd_channel_information"
+    __tablename__ = "ebd_channel_metadata"
     # Every channel can only appear once
     __table_args__ = (UniqueConstraint("channel_id", "filepath_id",
         "starttime", "endtime"), {})
