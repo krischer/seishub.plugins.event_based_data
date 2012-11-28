@@ -55,6 +55,7 @@ class FilepathsTable(Base):
     filepath = Column(String, nullable=False, unique=True)
     size = Column(Integer, nullable=False)
     mtime = Column(DateTime, nullable=False)
+    md5_hash = Column(String, nullable=False)
 
 
 class InstrumentResponsesTable(Base):
