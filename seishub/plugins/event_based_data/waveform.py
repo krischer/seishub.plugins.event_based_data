@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 from seishub.core.core import Component, implements
 from seishub.core.exceptions import NotFoundError, DuplicateObjectError, \
-    InvalidObjectError, InternalServerError
+    InvalidObjectError, InternalServerError, InvalidParameterError
 from seishub.core.packages.interfaces import IMapper
 
 import datetime
 import hashlib
 from obspy.core import read
 import os
+from sqlalchemy import Table
 
 from table_definitions import FilepathsTable, ChannelsTable
 
@@ -19,7 +20,15 @@ class WaveformUploader(Component):
     filenames and the files themselves will be stored in a folder structure on
     the hard drive.
 
-    They will be stored in the path specified in the config file at:
+    The POST upload URL is SEISHUB_SERVER/event_based_data/waveform/upload. An
+    event_resource_name needs to be given and must correspond to an event
+    in the database. Only event bound data can currently be uploaded.
+
+    A full upload URL can look like this:
+
+    SEISHUB_SERVER/event_based_data/waveform/upload?event_resource_name=event_1
+
+    Waveforms will be stored in the path specified in the config file at:
         [event_based_data] waveform_filepath
 
     Every file will be named according to the following schema. Not existent
@@ -50,6 +59,24 @@ class WaveformUploader(Component):
         Function that will be called upon receiving a POST request for the
         aforementioned URL.
         """
+        # Every waveform MUST be bound to an event.
+        event_id = request.args0.get("event_resource_name", None)
+        if event_id is None:
+            msg = ("No event_resource_name parameter passed. Every waveform "
+                "must be bound to an existing event.")
+            raise InvalidParameterError(msg)
+
+        # Check if the event actually exists in the database.
+        session = self.env.db.session(bind=self.env.db.engine)
+        event_view = Table("/event_based_data/event", request.env.db.metadata,
+                            autoload=True)
+        query = session.query(event_view.columns["resource_name"]).filter(
+            event_view.columns["resource_name"] == event_id)
+        if query.count() == 0:
+            msg = "The given event resource name '%s' " % event_id
+            msg += "is not known to SeisHub."
+            raise InvalidParameterError(msg)
+
         request.content.seek(0, 0)
         msg = ("The attached content does not appear to be a valid waveform "
                "file. Only data readable by ObsPy is acceptable.")
