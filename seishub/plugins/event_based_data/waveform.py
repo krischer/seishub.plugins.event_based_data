@@ -10,7 +10,7 @@ import hashlib
 from obspy.core import read
 import os
 
-from table_definitions import FilepathsTable
+from table_definitions import FilepathsTable, ChannelsTable
 
 
 class WaveformUploader(Component):
@@ -111,18 +111,60 @@ class WaveformUploader(Component):
         with open(filename, "wb") as open_file:
             open_file.write(data)
 
-        # So far nothing has been written to the database. Do this now. If it
-        # fails, roll back any database changes and delete the file.
+        # Use only one session to be able to take advantage of transactions.
         session = self.env.db.session(bind=self.env.db.engine)
+
+        # Wrap in try/except and rollback changes in case something fails.
         try:
+            # Add information about the uploaded file into the database.
             session.add(FilepathsTable(filepath=filename, size=len(data),
                 mtime=datetime.datetime.now(), md5_hash=md5_hash))
+            # Loop over all traces in the file.
+            for trace in st:
+                stats = trace.stats
+                # Find the potentially already existing channel.
+                query = session.query(ChannelsTable)\
+                    .filter(ChannelsTable.network == stats.network)\
+                    .filter(ChannelsTable.station == stats.station)\
+                    .filter(ChannelsTable.location == stats.location)\
+                    .filter(ChannelsTable.channel == stats.channel)
+                # Some waveform formats can contain location information. This
+                # should be used if applicable.
+                if hasattr(st[0].stats, "sac"):
+                    lat = st[0].stats.sac.stla
+                    lng = st[0].stats.sac.stlo
+                    ele = st[0].stats.sac.stel
+                    # If any is invalid, assume all are.
+                    if -12345.0 in [lat, lng, ele] or None in [lat, lng, ele]:
+                        lat, lng, ele = None
+                else:
+                    lat, lng, stel = None
+                if query.count() == 0:
+                    channel = ChannelsTable(network=stats.network,
+                        station=stats.station, channel=stats.channel,
+                        location=stats.location)
+                # Also update already existent channels with location
+                # information.
+                elif query.count() == 1:
+                    channel = query.first()
+                else:
+                    # This should never happen. Just a safety measure. Should
+                    # already be covered by constraints within the database.
+                    msg = "Duplicate channel in the channel database."
+                    raise Exception
+                if lat and lng and ele and (not channel.latitude or
+                    not channel.longitude or not channel.elevation_in_m):
+                    channel.latitude = lat
+                    channel.longitude = lng
+                    channel.elevation_in_m = ele
+                session.add(channel)
+                session.commit()
         except Exception, e:
             # Rollback session.
             session.rollback()
             session.close()
-            # Remove the file.
+            # Remove the file if something failes..
             os.remove(filename)
             msg = e.message + "\nRolling back changes."
             raise InternalServerError(msg)
-
+        session.close()
