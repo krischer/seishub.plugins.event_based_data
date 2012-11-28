@@ -41,7 +41,7 @@ class WaveformUploader(Component):
     network or station codes will be replaced with "XX". It will always be
     named after the first trace in the file.
 
-        network/station/network.station.channel-year_month_day_hour
+        network/station/network.station.location.channel-year_month_day_hour
 
     If necessary, a ".1", ".2", ... will be appended to the filename if many
     files close to one another in time are stored.
@@ -121,19 +121,21 @@ class WaveformUploader(Component):
         session.close()
 
         # Replace network, station and channel codes with placeholders if they
-        # do not exist.
+        # do not exist. Location can be an empty string.
         network = st[0].stats.network if st[0].stats.network else "XX"
         station = st[0].stats.station if st[0].stats.station else "XX"
+        location = st[0].stats.location
         channel = st[0].stats.channel if st[0].stats.channel else "XX"
 
         # Otherwise create the filename for the file, and check if it exists.
         filename = os.path.join(self.env.config.get("event_based_data",
             "waveform_filepath"), network, station,
-            "{network}.{station}.{channel}-{year}_{month}_{day}_{hour}")
+            ("{network}.{station}.{location}.{channel}-"
+            "{year}_{month}_{day}_{hour}"))
         t = st[0].stats.starttime
         filename = filename.format(network=network, station=station,
-            channel=channel, year=t.year, month=t.month, day=t.day,
-            hour=t.hour)
+            channel=channel, location=location, year=t.year, month=t.month,
+            day=t.day, hour=t.hour)
         # If it exists, append a number. Repeat until a non taken one if found.
         if os.path.exists(filename):
             i = 1
