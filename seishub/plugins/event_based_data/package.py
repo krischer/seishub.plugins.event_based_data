@@ -43,8 +43,8 @@ class EventBasedDataPackage(Component):
 
     Option("event_based_data", "waveform_filepath", "",
         "Determines where the binary waveforms will be stored upon uploading.")
-    Option("event_based_data", "response_filepath", "",
-        ("Determines where the instrument response files will be stored upon "
+    Option("event_based_data", "station_filepath", "",
+        ("Determines where the station information files will be stored upon "
         "uploading."))
 
     def __init__(self, *args, **kwargs):
@@ -57,14 +57,14 @@ class EventBasedDataPackage(Component):
         if self.env.config.get("event_based_data", "waveform_filepath") == "":
             self.env.config.set("event_based_data", "waveform_filepath",
                 os.path.join(self.env.getInstancePath(), "data", "waveforms"))
-        if self.env.config.get("event_based_data", "response_filepath") == "":
-            self.env.config.set("event_based_data", "response_filepath",
+        if self.env.config.get("event_based_data", "station_filepath") == "":
+            self.env.config.set("event_based_data", "station_filepath",
                 os.path.join(self.env.getInstancePath(), "data", "responses"))
         # Save the config file to the values can written.
         self.env.config.save()
         # Make sure the paths exist.
         paths = [self.env.config.get("event_based_data", "waveform_filepath"),
-            self.env.config.get("event_based_data", "response_filepath")]
+            self.env.config.get("event_based_data", "station_filepath")]
         for path in paths:
             if not os.path.exists(path):
                 os.makedirs(path)
