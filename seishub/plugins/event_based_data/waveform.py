@@ -13,6 +13,7 @@ from sqlalchemy import Table
 
 from table_definitions import FilepathsTable, ChannelsTable, \
     WaveformChannelsTable
+from util import check_if_file_exist_in_db
 
 lowercase_true_strings = ("true", "yes", "y")
 
@@ -104,21 +105,12 @@ class WaveformUploader(Component):
         if len(st) == 0:
             raise InvalidObjectError(msg)
 
-        # Read the data, calculate the md5 hash and check if the file already
-        # exists.
         request.content.seek(0, 0)
         data = request.content.read()
-        md5_hash = hashlib.md5(data).hexdigest()
 
-        session = self.env.db.session(bind=self.env.db.engine)
-        query = session.query(FilepathsTable.md5_hash).filter(
-            FilepathsTable.md5_hash == md5_hash)
-        # Check if a file with the same hash if found. If it is, raise an
-        # appropriate HTTP error code.
-        if query.count() != 0:
-            msg = "This file already exists in the database."
-            raise DuplicateObjectError(msg)
-        session.close()
+        # Check if file exists. Checksum is returned otherwise. Raises on
+        # failure.
+        md5_hash = check_if_file_exist_in_db(data, self.env)
 
         # Replace network, station and channel codes with placeholders if they
         # do not exist. Location can be an empty string.
