@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from seishub.core.core import Component, implements
-from seishub.core.exceptions import NotFoundError, DuplicateObjectError, \
-    InvalidObjectError, InternalServerError, InvalidParameterError
+from seishub.core.exceptions import NotFoundError, InvalidObjectError, \
+    InternalServerError, InvalidParameterError
 from seishub.core.packages.interfaces import IMapper
 
 import datetime
-import hashlib
 from obspy.core import read
 import os
 from sqlalchemy import Table
