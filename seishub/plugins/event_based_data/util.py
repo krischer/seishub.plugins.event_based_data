@@ -11,6 +11,7 @@ Shared utility function.
 """
 from seishub.core.exceptions import DuplicateObjectError
 
+import datetime
 import hashlib
 import os
 
@@ -68,3 +69,18 @@ def write_string_to_filesystem(filename, string):
     with open(filename, "wb") as open_file:
         open_file.write(string)
     return filename
+
+
+def add_filepath_to_database(open_session, filepath, filesize, md5_hash):
+    """
+    Add information about a filepath to the database. Expects an open
+    SQLAlchemy session.
+
+    Returns the Column object.
+    """
+    # Add information about the uploaded file into the database.
+    filepath = FilepathsTable(filepath=filepath, size=filesize,
+        mtime=datetime.datetime.now(), md5_hash=md5_hash)
+    open_session.add(filepath)
+    open_session.commit()
+    return filepath

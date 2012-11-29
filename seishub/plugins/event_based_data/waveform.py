@@ -5,14 +5,13 @@ from seishub.core.exceptions import NotFoundError, InvalidObjectError, \
     InternalServerError, InvalidParameterError
 from seishub.core.packages.interfaces import IMapper
 
-import datetime
 from obspy.core import read
 import os
 from sqlalchemy import Table
 
-from table_definitions import FilepathsTable, ChannelsTable, \
-    WaveformChannelsTable
-from util import check_if_file_exist_in_db, write_string_to_filesystem
+from table_definitions import ChannelsTable, WaveformChannelsTable
+from util import check_if_file_exist_in_db, write_string_to_filesystem, \
+    add_filepath_to_database
 
 lowercase_true_strings = ("true", "yes", "y")
 
@@ -128,7 +127,7 @@ class WaveformUploader(Component):
             channel=channel, location=location, year=t.year, month=t.month,
             day=t.day, hour=t.hour)
 
-        # Write the data to the filesystem.
+        # Write the data to the filesystem. The final filename is returned.
         filename = write_string_to_filesystem(filename, data)
 
         # Use only one session to be able to take advantage of transactions.
@@ -137,19 +136,11 @@ class WaveformUploader(Component):
         # Wrap in try/except and rollback changes in case something fails.
         try:
             # Add information about the uploaded file into the database.
-            filepath = FilepathsTable(filepath=filename, size=len(data),
-                mtime=datetime.datetime.now(), md5_hash=md5_hash)
-            session.add(filepath)
-            session.commit()
+            filepath = add_filepath_to_database(session, filename, len(data),
+                    md5_hash)
+
             # Loop over all traces in the file.
             for trace in st:
-                stats = trace.stats
-                # Find the potentially already existing channel.
-                query = session.query(ChannelsTable)\
-                    .filter(ChannelsTable.network == stats.network)\
-                    .filter(ChannelsTable.station == stats.station)\
-                    .filter(ChannelsTable.location == stats.location)\
-                    .filter(ChannelsTable.channel == stats.channel)
                 # Some waveform formats can contain location information. This
                 # should be used if applicable.
                 if hasattr(st[0].stats, "sac"):
@@ -161,6 +152,14 @@ class WaveformUploader(Component):
                         lat, lng, ele = None
                 else:
                     lat, lng, stel = None
+
+                stats = trace.stats
+                # Find the potentially already existing channel.
+                query = session.query(ChannelsTable)\
+                    .filter(ChannelsTable.network == stats.network)\
+                    .filter(ChannelsTable.station == stats.station)\
+                    .filter(ChannelsTable.location == stats.location)\
+                    .filter(ChannelsTable.channel == stats.channel)
                 if query.count() == 0:
                     channel = ChannelsTable(network=stats.network,
                         station=stats.station, channel=stats.channel,
