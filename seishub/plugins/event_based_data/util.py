@@ -12,6 +12,7 @@ Shared utility function.
 from seishub.core.exceptions import DuplicateObjectError
 
 import hashlib
+import os
 
 from table_definitions import FilepathsTable
 
@@ -38,3 +39,32 @@ def check_if_file_exist_in_db(data, env):
         msg = "This file already exists in the database."
         raise DuplicateObjectError(msg)
     return md5_hash
+
+
+def write_string_to_filesystem(filename, string):
+    """
+    Takes a given string and writes it to the given filename. Any intermediate
+    directories will be created in case they do not exist. If the file already
+    exists, an increasing integer will be appended to it until a non-take
+    filename is found.
+
+    Returns the final filename.
+    """
+    # If it exists, append a number. Repeat until a non taken one if found.
+    if os.path.exists(filename):
+        i = 1
+        while True:
+            new_filename = "%s.%i" % (filename, i)
+            if not os.path.exists(new_filename):
+                filename = new_filename
+                break
+            i += 1
+
+    # Get the directory and if it does not exist, create it.
+    directory = os.path.dirname(filename)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    # Write the file
+    with open(filename, "wb") as open_file:
+        open_file.write(string)
+    return filename

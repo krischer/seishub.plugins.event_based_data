@@ -12,7 +12,7 @@ from sqlalchemy import Table
 
 from table_definitions import FilepathsTable, ChannelsTable, \
     WaveformChannelsTable
-from util import check_if_file_exist_in_db
+from util import check_if_file_exist_in_db, write_string_to_filesystem
 
 lowercase_true_strings = ("true", "yes", "y")
 
@@ -127,23 +127,9 @@ class WaveformUploader(Component):
         filename = filename.format(network=network, station=station,
             channel=channel, location=location, year=t.year, month=t.month,
             day=t.day, hour=t.hour)
-        # If it exists, append a number. Repeat until a non taken one if found.
-        if os.path.exists(filename):
-            i = 1
-            while True:
-                new_filename = "%s.%i" % (filename, i)
-                if not os.path.exists(new_filename):
-                    filename = new_filename
-                    break
-                i += 1
 
-        # Get the directory and if it does not exist, create it.
-        directory = os.path.dirname(filename)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        # Write the file
-        with open(filename, "wb") as open_file:
-            open_file.write(data)
+        # Write the data to the filesystem.
+        filename = write_string_to_filesystem(filename, data)
 
         # Use only one session to be able to take advantage of transactions.
         session = self.env.db.session(bind=self.env.db.engine)
