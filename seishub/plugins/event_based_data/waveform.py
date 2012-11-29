@@ -92,6 +92,13 @@ class WaveformUploader(Component):
             raise InvalidParameterError(msg)
 
         request.content.seek(0, 0)
+        data = request.content.read()
+
+        # Check if file exists. Checksum is returned otherwise. Raises on
+        # failure.
+        md5_hash = check_if_file_exist_in_db(data, self.env)
+        request.content.seek(0, 0)
+
         msg = ("The attached content does not appear to be a valid waveform "
                "file. Only data readable by ObsPy is acceptable.")
         # Only valid waveforms files will be stored in the database. Valid is
@@ -103,13 +110,6 @@ class WaveformUploader(Component):
         # Also raise if it does not contain any waveform data.
         if len(st) == 0:
             raise InvalidObjectError(msg)
-
-        request.content.seek(0, 0)
-        data = request.content.read()
-
-        # Check if file exists. Checksum is returned otherwise. Raises on
-        # failure.
-        md5_hash = check_if_file_exist_in_db(data, self.env)
 
         # Replace network, station and channel codes with placeholders if they
         # do not exist. Location can be an empty string.
