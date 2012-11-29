@@ -14,7 +14,7 @@ from sqlalchemy import Table
 
 from table_definitions import FilepathsTable, ChannelsTable, \
     ChannelMetadataTable
-from util import check_if_file_exist_in_db
+from util import check_if_file_exist_in_db, write_string_to_filesystem
 
 
 class StationInformationUploader(Component):
@@ -89,7 +89,27 @@ class StationInformationUploader(Component):
             channel=channels[0]["channel"],
             year=channels[0]["start_date"].year,
             month=channels[0]["start_date"].month)
-        print filename
+
+        # Write the data to the filesystem. The final filename is returned.
+        filename = write_string_to_filesystem(filename, data)
+
+        # Use only one session to be able to take advantage of transactions.
+        session = self.env.db.session(bind=self.env.db.engine)
+
+        # Wrap in try/except and rollback changes in case something fails.
+        try:
+            # Add information about the uploaded file into the database.
+            filepath = add_filepath_to_database(session, filename, len(data),
+                    md5_hash)
+        except Exception, e:
+            # Rollback session.
+            session.rollback()
+            session.close()
+            # Remove the file if something failes..
+            os.remove(filename)
+            msg = e.message + " Rolling back all changes."
+            raise InternalServerError(msg)
+        session.close()
 
     def _read_RESP(self, string_io):
         """
