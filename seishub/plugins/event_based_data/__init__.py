@@ -3,3 +3,4 @@
 
 from package import *
 from waveform import *
+from station_information import *
