@@ -9,13 +9,13 @@ Shared utility function.
     GNU Lesser General Public License, Version 3
     (http://www.gnu.org/copyleft/lesser.html)
 """
-from seishub.core.exceptions import DuplicateObjectError
+from seishub.core.exceptions import DuplicateObjectError, InternalServerError
 
 import datetime
 import hashlib
 import os
 
-from table_definitions import FilepathsTable
+from table_definitions import ChannelsTable, FilepathsTable
 
 
 def check_if_file_exist_in_db(data, env):
@@ -84,3 +84,41 @@ def add_filepath_to_database(open_session, filepath, filesize, md5_hash):
     open_session.add(filepath)
     open_session.commit()
     return filepath
+
+
+def add_or_update_channel(open_session, network, station, location, channel,
+    latitude, longitude, elevation):
+    """
+    Adds the channel with the given parameters. If it already exists and does
+    not yet have coordinates, those will be added.
+
+    In any case the object from SQLAlchemy's ORM will be returned.
+    """
+    # Find the potentially already existing channel.
+    query = open_session.query(ChannelsTable)\
+        .filter(ChannelsTable.network == network)\
+        .filter(ChannelsTable.station == station)\
+        .filter(ChannelsTable.location == location)\
+        .filter(ChannelsTable.channel == channel)
+    if query.count() == 0:
+        channel = ChannelsTable(network=network,
+            station=station, channel=channel,
+            location=location)
+    # Also update already existent channels with location
+    # information.
+    elif query.count() == 1:
+        channel = query.first()
+    else:
+        # This should never happen. Just a safety measure. Should
+        # already be covered by constraints within the database.
+        msg = "Duplicate channel in the channel database."
+        raise InternalServerError(msg)
+    if latitude and longitude and elevation and (not channel.latitude or
+        not channel.longitude or not channel.elevation_in_m):
+        channel.latitude = latitude
+        channel.longitude = longitude
+        channel.elevation_in_m = elevation
+    open_session.add(channel)
+    open_session.commit()
+
+    return channel

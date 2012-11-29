@@ -9,9 +9,9 @@ from obspy.core import read
 import os
 from sqlalchemy import Table
 
-from table_definitions import ChannelsTable, WaveformChannelsTable
+from table_definitions import WaveformChannelsTable
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
-    add_filepath_to_database
+    add_filepath_to_database, add_or_update_channel
 
 lowercase_true_strings = ("true", "yes", "y")
 
@@ -141,46 +141,29 @@ class WaveformUploader(Component):
 
             # Loop over all traces in the file.
             for trace in st:
-                # Some waveform formats can contain location information. This
-                # should be used if applicable.
-                if hasattr(st[0].stats, "sac"):
-                    lat = st[0].stats.sac.stla
-                    lng = st[0].stats.sac.stlo
-                    ele = st[0].stats.sac.stel
-                    # If any is invalid, assume all are.
-                    if -12345.0 in [lat, lng, ele] or None in [lat, lng, ele]:
-                        lat, lng, ele = None
-                else:
-                    lat, lng, stel = None
-
                 stats = trace.stats
-                # Find the potentially already existing channel.
-                query = session.query(ChannelsTable)\
-                    .filter(ChannelsTable.network == stats.network)\
-                    .filter(ChannelsTable.station == stats.station)\
-                    .filter(ChannelsTable.location == stats.location)\
-                    .filter(ChannelsTable.channel == stats.channel)
-                if query.count() == 0:
-                    channel = ChannelsTable(network=stats.network,
-                        station=stats.station, channel=stats.channel,
-                        location=stats.location)
-                # Also update already existent channels with location
-                # information.
-                elif query.count() == 1:
-                    channel = query.first()
-                else:
-                    # This should never happen. Just a safety measure. Should
-                    # already be covered by constraints within the database.
-                    msg = "Duplicate channel in the channel database."
-                    raise Exception
-                if lat and lng and ele and (not channel.latitude or
-                    not channel.longitude or not channel.elevation_in_m):
-                    channel.latitude = lat
-                    channel.longitude = lng
-                    channel.elevation_in_m = ele
-                session.add(channel)
-                session.commit()
 
+                # Extract coordinates if it is a sac file. Else set them to
+                # None.
+                if hasattr(stats, "sac"):
+                    latitude = stats.sac.stla
+                    longitude = stats.sac.stlo
+                    elevation = stats.sac.stel
+                    # If any is invalid, assume all are.
+                    if -12345.0 in [latitude, longitude, elevation] or \
+                        None in [latitude, longitude, elevation]:
+                        latitude, longitude, elevation = None
+                else:
+                    latitude, longitude, elevation = None
+
+                # Add the channel if it does not already exists, or update the
+                # location or just return the existing station. In any case a
+                # channel column object will be returned.
+                channel = add_or_update_channel(session, stats.network,
+                    stats.station, stats.location, stats.channel, latitude,
+                    longitude, elevation)
+
+                # Add the current waveform channel as well.
                 waveform_channel = WaveformChannelsTable(channel_id=channel.id,
                     filepath_id=filepath.id, event_resource_id=event_id,
                     starttime=stats.starttime.datetime,
