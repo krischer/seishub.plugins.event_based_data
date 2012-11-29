@@ -69,7 +69,7 @@ class ChannelMetadataTable(Base):
     filepath_id = Column(Integer, ForeignKey("ebd_filepaths.id"),
         nullable=False)
     starttime = Column(DateTime, nullable=False)
-    endtime = Column(DateTime, nullable=False)
+    endtime = Column(DateTime, nullable=True)
     format = Column(String, nullable=False)
 
 
