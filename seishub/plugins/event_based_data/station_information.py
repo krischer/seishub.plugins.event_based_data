@@ -1,20 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from seishub.core.core import Component, implements
-from seishub.core.exceptions import NotFoundError, DuplicateObjectError, \
-    InvalidObjectError, InternalServerError, InvalidParameterError
+from seishub.core.exceptions import NotFoundError, InvalidObjectError, \
+    InternalServerError
 from seishub.core.packages.interfaces import IMapper
 
-import datetime
-import hashlib
 from obspy.core import UTCDateTime
 from obspy.xseed import Parser
 import os
-from sqlalchemy import Table
 
-from table_definitions import FilepathsTable, ChannelsTable, \
-    ChannelMetadataTable
-from util import check_if_file_exist_in_db, write_string_to_filesystem
+from table_definitions import ChannelMetadataTable
+from util import check_if_file_exist_in_db, write_string_to_filesystem, \
+    add_or_update_channel, add_filepath_to_database
 
 
 class StationInformationUploader(Component):
@@ -101,10 +98,79 @@ class StationInformationUploader(Component):
             # Add information about the uploaded file into the database.
             filepath = add_filepath_to_database(session, filename, len(data),
                     md5_hash)
+            # Loop over all channels.
+            for channel in channels:
+                # Add the channel if it does not already exists, or update the
+                # location or just return the existing station. In any case a
+                # channel column object will be returned.
+                channel_row, old_channel_row = add_or_update_channel(session,
+                    channel["network"], channel["station"],
+                    channel["location"], channel["channel"],
+                    channel["latitude"], channel["longitude"],
+                    channel["elevation"])
+
+                # Now add information about the time span of the current
+                # channel information.
+                if hasattr(channel["end_date"], "datetime"):
+                    end_date = channel["end_date"].datetime
+                else:
+                    end_date = None
+                metadata = ChannelMetadataTable(channel_id=channel_row.id,
+                    filepath_id=filepath.id,
+                    starttime=channel["start_date"].datetime,
+                    endtime=end_date,
+                    format=channel["format"])
+                session.add(metadata)
+
+                session.commit()
         except Exception, e:
             # Rollback session.
             session.rollback()
+
+            # Try to rollback all changes made to the database. This is
+            # unfortunately rather messy.
+            try:
+                session.delete(filepath)
+                session.commit()
+            # Possible if the exception occured before the object was created.
+            except UnboundLocalError:
+                pass
+            except Exception, e:
+                msg = "Trouble rolling back the filepath commit. " + e.message
+                self.env.log.error(msg)
+                raise InternalServerError(msg)
+                pass
+
+            # Delete the channel row and restore the old one if one exists.
+            try:
+                session.delete(channel_row)
+                if old_channel_row is not None:
+                    session.add(old_channel_row)
+                session.commit()
+            # Possible if the exception occured before the object was created.
+            except UnboundLocalError:
+                pass
+            except Exception, e:
+                msg = "Trouble rolling back the channel commit. " + e.message
+                self.env.log.error(msg)
+                raise InternalServerError(msg)
+
+            # This should usually never be committed as it is the last thing
+            # that can occur and thus if something went wrong it did before it
+            # got added to the database. Just delete in any case.
+            try:
+                session.delete(metadata)
+                session.commit()
+            # This is to be expected as metadata will most likely not exist.
+            except UnboundLocalError:
+                pass
+            # This should not happen.
+            except Exception, e:
+                msg = "Trouble rolling back the metadata commit. " + e.message
+                self.env.log.error(msg)
+                raise InternalServerError(msg)
             session.close()
+
             # Remove the file if something failes..
             os.remove(filename)
             msg = e.message + " Rolling back all changes."
@@ -153,25 +219,30 @@ class StationInformationUploader(Component):
                 current_channel = line.split()[-1]
             # Startdate
             elif line.startswith("B052F22"):
-                current_starttime = _parse_time_string(line.split()[-1])
+                current_startdate = _parse_time_string(line.split()[-1])
             # Enddate
             elif line.startswith("B052F23"):
-                current_endtime = _parse_time_string(line.split()[-1])
+                current_enddate = _parse_time_string(line.split()[-1])
                 if current_network is not None and \
                     current_station is not None and \
                     current_location is not None and \
                     current_channel is not None and \
-                    current_starttime is not None:
+                    current_startdate is not None:
                     channel = {"network": current_network,
                         "station": current_station,
                         "location": current_location,
                         "channel": current_channel,
-                        "start_date": current_starttime,
-                        "end_date": current_endtime}
+                        "latitude": None,
+                        "longitude": None,
+                        "elevation": None,
+                        "format": "RESP",
+                        "start_date": current_startdate,
+                        "end_date": current_enddate}
                     channels.append(channel)
                 # Set to None again to start the next round.
                 current_network = current_station = current_location = \
-                    current_channel = current_startdate = current_enddate = None
+                    current_channel = current_startdate = current_enddate = \
+                    None
         if len(channels) == 0:
             return False
         return channels
@@ -201,4 +272,5 @@ class StationInformationUploader(Component):
             channel["latitude"] = location["latitude"]
             channel["longitude"] = location["longitude"]
             channel["elevation_in_m"] = location["elevation"]
+            channel["format"] = p._format
         return channels

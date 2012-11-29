@@ -11,6 +11,7 @@ Shared utility function.
 """
 from seishub.core.exceptions import DuplicateObjectError, InternalServerError
 
+import copy
 import datetime
 import hashlib
 import os
@@ -92,7 +93,9 @@ def add_or_update_channel(open_session, network, station, location, channel,
     Adds the channel with the given parameters. If it already exists and does
     not yet have coordinates, those will be added.
 
-    In any case the object from SQLAlchemy's ORM will be returned.
+    In any case the object from SQLAlchemy's ORM will be returned. It
+    furthermore returns the old version of the channel row. Useful for rolling
+    back changes if something goes bad later on.
     """
     # Find the potentially already existing channel.
     query = open_session.query(ChannelsTable)\
@@ -104,10 +107,12 @@ def add_or_update_channel(open_session, network, station, location, channel,
         channel = ChannelsTable(network=network,
             station=station, channel=channel,
             location=location)
+        old_channel = None
     # Also update already existent channels with location
     # information.
     elif query.count() == 1:
         channel = query.first()
+        old_channel = copy.copy(channel)
     else:
         # This should never happen. Just a safety measure. Should
         # already be covered by constraints within the database.
@@ -121,4 +126,4 @@ def add_or_update_channel(open_session, network, station, location, channel,
     open_session.add(channel)
     open_session.commit()
 
-    return channel
+    return channel, old_channel
