@@ -72,6 +72,7 @@ class ChannelMetadataObject(Base):
     endtime = Column(DateTime, nullable=True)
     format = Column(String, nullable=False)
 
+    # Add relationsships to enable two way bindings.
     channel = relationship("ChannelObject",
         backref=backref("channel_metadata", order_by=id))
     filepath = relationship("FilepathObject",
