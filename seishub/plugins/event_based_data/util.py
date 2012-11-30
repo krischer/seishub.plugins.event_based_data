@@ -16,7 +16,7 @@ import datetime
 import hashlib
 import os
 
-from table_definitions import ChannelsTable, FilepathsTable
+from table_definitions import ChannelObject, FilepathObject
 
 
 def check_if_file_exist_in_db(data, env):
@@ -33,8 +33,8 @@ def check_if_file_exist_in_db(data, env):
     md5_hash = hashlib.md5(data).hexdigest()
 
     session = env.db.session(bind=env.db.engine)
-    query = session.query(FilepathsTable.md5_hash).filter(
-        FilepathsTable.md5_hash == md5_hash)
+    query = session.query(FilepathObject.md5_hash).filter(
+        FilepathObject.md5_hash == md5_hash)
     count = query.count()
     session.close()
     if count != 0:
@@ -80,7 +80,7 @@ def add_filepath_to_database(open_session, filepath, filesize, md5_hash):
     Returns the Column object.
     """
     # Add information about the uploaded file into the database.
-    filepath = FilepathsTable(filepath=filepath, size=filesize,
+    filepath = FilepathObject(filepath=filepath, size=filesize,
         mtime=datetime.datetime.now(), md5_hash=md5_hash)
     open_session.add(filepath)
     open_session.commit()
@@ -98,13 +98,13 @@ def add_or_update_channel(open_session, network, station, location, channel,
     back changes if something goes bad later on.
     """
     # Find the potentially already existing channel.
-    query = open_session.query(ChannelsTable)\
-        .filter(ChannelsTable.network == network)\
-        .filter(ChannelsTable.station == station)\
-        .filter(ChannelsTable.location == location)\
-        .filter(ChannelsTable.channel == channel)
+    query = open_session.query(ChannelObject)\
+        .filter(ChannelObject.network == network)\
+        .filter(ChannelObject.station == station)\
+        .filter(ChannelObject.location == location)\
+        .filter(ChannelObject.channel == channel)
     if query.count() == 0:
-        channel = ChannelsTable(network=network,
+        channel = ChannelObject(network=network,
             station=station, channel=channel,
             location=location)
         old_channel = None

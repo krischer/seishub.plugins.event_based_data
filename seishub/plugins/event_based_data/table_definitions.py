@@ -14,13 +14,14 @@ with "ebd_" to indicate it is part of the event_based_data plugin.
 from sqlalchemy import ForeignKey, Column, Integer, DateTime, Float, String, \
     Boolean
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import backref, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 
 Base = declarative_base()
 
 
-class ChannelsTable(Base):
+class ChannelObject(Base):
     """
     Database table containing channel information. Lat/lng/depth are nullable
     because they do not necessarily need to be known. Should be filled once
@@ -41,7 +42,7 @@ class ChannelsTable(Base):
     elevation_in_m = Column(Float, nullable=True, index=True)
 
 
-class FilepathsTable(Base):
+class FilepathObject(Base):
     """
     Table containing all physical files stored on the disk.
     """
@@ -54,7 +55,7 @@ class FilepathsTable(Base):
     md5_hash = Column(String, nullable=False)
 
 
-class ChannelMetadataTable(Base):
+class ChannelMetadataObject(Base):
     """
     Table storing information about the channels. Every continuous interval
     will have a seperate entry even if they reside in the same file.
@@ -65,15 +66,19 @@ class ChannelMetadataTable(Base):
         "starttime", "endtime"), {})
 
     id = Column(Integer, primary_key=True)
-    channel_id = Column(Integer, ForeignKey("ebd_channels.id"), nullable=False)
-    filepath_id = Column(Integer, ForeignKey("ebd_filepaths.id"),
-        nullable=False)
+    channel_id = Column(Integer, ForeignKey("ebd_channels.id"))
+    filepath_id = Column(Integer, ForeignKey("ebd_filepaths.id"))
     starttime = Column(DateTime, nullable=False)
     endtime = Column(DateTime, nullable=True)
     format = Column(String, nullable=False)
 
+    channel = relationship("ChannelObject",
+        backref=backref("channel_metadata", order_by=id))
+    filepath = relationship("FilepathObject",
+        backref=backref("channel_metadata", order_by=id))
 
-class WaveformChannelsTable(Base):
+
+class WaveformChannelObject(Base):
     """
     Table containing information about every continuous waveform trace. Every
     trace will have its separate entry, even if they reside in the same file.

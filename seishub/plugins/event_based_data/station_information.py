@@ -9,7 +9,7 @@ from obspy.core import UTCDateTime
 from obspy.xseed import Parser
 import os
 
-from table_definitions import ChannelMetadataTable
+from table_definitions import ChannelMetadataObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
     add_or_update_channel, add_filepath_to_database
 
@@ -115,7 +115,7 @@ class StationInformationUploader(Component):
                     end_date = channel["end_date"].datetime
                 else:
                     end_date = None
-                metadata = ChannelMetadataTable(channel_id=channel_row.id,
+                metadata = ChannelMetadataObject(channel_id=channel_row.id,
                     filepath_id=filepath.id,
                     starttime=channel["start_date"].datetime,
                     endtime=end_date,

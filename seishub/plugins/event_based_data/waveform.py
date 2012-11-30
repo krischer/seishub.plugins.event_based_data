@@ -9,7 +9,7 @@ from obspy.core import read
 import os
 from sqlalchemy import Table
 
-from table_definitions import WaveformChannelsTable
+from table_definitions import WaveformChannelObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
     add_filepath_to_database, add_or_update_channel
 
@@ -164,7 +164,7 @@ class WaveformUploader(Component):
                     stats.channel, latitude, longitude, elevation)
 
                 # Add the current waveform channel as well.
-                waveform_channel = WaveformChannelsTable(
+                waveform_channel = WaveformChannelObject(
                     channel_id=channel_row.id, filepath_id=filepath.id,
                     event_resource_id=event_id,
                     starttime=stats.starttime.datetime,
