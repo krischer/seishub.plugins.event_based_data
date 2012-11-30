@@ -103,7 +103,7 @@ class StationInformationUploader(Component):
                 # Add the channel if it does not already exists, or update the
                 # location or just return the existing station. In any case a
                 # channel column object will be returned.
-                channel_row, old_channel_row = add_or_update_channel(session,
+                channel_row = add_or_update_channel(session,
                     channel["network"], channel["station"],
                     channel["location"], channel["channel"],
                     channel["latitude"], channel["longitude"],
@@ -115,8 +115,9 @@ class StationInformationUploader(Component):
                     end_date = channel["end_date"].datetime
                 else:
                     end_date = None
-                metadata = ChannelMetadataObject(channel_id=channel_row.id,
-                    filepath_id=filepath.id,
+
+                metadata = ChannelMetadataObject(channel=channel_row,
+                    filepath=filepath,
                     starttime=channel["start_date"].datetime,
                     endtime=end_date,
                     format=channel["format"])
@@ -126,49 +127,6 @@ class StationInformationUploader(Component):
         except Exception, e:
             # Rollback session.
             session.rollback()
-
-            # Try to rollback all changes made to the database. This is
-            # unfortunately rather messy.
-            try:
-                session.delete(filepath)
-                session.commit()
-            # Possible if the exception occured before the object was created.
-            except UnboundLocalError:
-                pass
-            except Exception, e:
-                msg = "Trouble rolling back the filepath commit. " + e.message
-                self.env.log.error(msg)
-                raise InternalServerError(msg)
-                pass
-
-            # Delete the channel row and restore the old one if one exists.
-            try:
-                session.delete(channel_row)
-                if old_channel_row is not None:
-                    session.add(old_channel_row)
-                session.commit()
-            # Possible if the exception occured before the object was created.
-            except UnboundLocalError:
-                pass
-            except Exception, e:
-                msg = "Trouble rolling back the channel commit. " + e.message
-                self.env.log.error(msg)
-                raise InternalServerError(msg)
-
-            # This should usually never be committed as it is the last thing
-            # that can occur and thus if something went wrong it did before it
-            # got added to the database. Just delete in any case.
-            try:
-                session.delete(metadata)
-                session.commit()
-            # This is to be expected as metadata will most likely not exist.
-            except UnboundLocalError:
-                pass
-            # This should not happen.
-            except Exception, e:
-                msg = "Trouble rolling back the metadata commit. " + e.message
-                self.env.log.error(msg)
-                raise InternalServerError(msg)
             session.close()
 
             # Remove the file if something failes..

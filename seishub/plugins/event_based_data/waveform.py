@@ -159,13 +159,13 @@ class WaveformUploader(Component):
                 # Add the channel if it does not already exists, or update the
                 # location or just return the existing station. In any case a
                 # channel column object will be returned.
-                channel_row, old_channel_row = add_or_update_channel(session,
+                channel_row = add_or_update_channel(session,
                     stats.network, stats.station, stats.location,
                     stats.channel, latitude, longitude, elevation)
 
                 # Add the current waveform channel as well.
                 waveform_channel = WaveformChannelObject(
-                    channel_id=channel_row.id, filepath_id=filepath.id,
+                    channel=channel_row, filepath=filepath,
                     event_resource_id=event_id,
                     starttime=stats.starttime.datetime,
                     endtime=stats.endtime.datetime,
@@ -177,52 +177,8 @@ class WaveformUploader(Component):
         except Exception, e:
             # Rollback session.
             session.rollback()
-
-            # Try to rollback all changes made to the database. This is
-            # unfortunately rather messy.
-            try:
-                session.delete(filepath)
-                session.commit()
-            # Possible if the exception occured before the object was created.
-            except UnboundLocalError:
-                pass
-            except Exception, e:
-                msg = "Trouble rolling back the filepath commit. " + e.message
-                self.env.log.error(msg)
-                raise InternalServerError(msg)
-                pass
-
-            # Delete the channel row and restore the old one if one exists.
-            try:
-                session.delete(channel_row)
-                if old_channel_row is not None:
-                    session.add(old_channel_row)
-                session.commit()
-            # Possible if the exception occured before the object was created.
-            except UnboundLocalError:
-                pass
-            except Exception, e:
-                msg = "Trouble rolling back the channel commit. " + e.message
-                self.env.log.error(msg)
-                raise InternalServerError(msg)
-
-            # This should usually never be committed as it is the last thing
-            # that can occur and thus if something went wrong it did before it
-            # got added to the database. Just delete in any case.
-            try:
-                session.delete(waveform_channel)
-                session.commit()
-            # This is to be expected as metadata will most likely not exist.
-            except UnboundLocalError:
-                pass
-            # This should not happen.
-            except Exception, e:
-                msg = "Trouble rolling back the waveform channel commit. " + \
-                    e.message
-                self.env.log.error(msg)
-                raise InternalServerError(msg)
-
             session.close()
+
             # Remove the file if something failes..
             os.remove(filename)
             msg = e.message + " Rolling back all changes."

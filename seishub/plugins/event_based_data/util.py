@@ -11,7 +11,6 @@ Shared utility function.
 """
 from seishub.core.exceptions import DuplicateObjectError, InternalServerError
 
-import copy
 import datetime
 import hashlib
 import os
@@ -83,7 +82,6 @@ def add_filepath_to_database(open_session, filepath, filesize, md5_hash):
     filepath = FilepathObject(filepath=filepath, size=filesize,
         mtime=datetime.datetime.now(), md5_hash=md5_hash)
     open_session.add(filepath)
-    open_session.commit()
     return filepath
 
 
@@ -107,12 +105,10 @@ def add_or_update_channel(open_session, network, station, location, channel,
         channel = ChannelObject(network=network,
             station=station, channel=channel,
             location=location)
-        old_channel = None
     # Also update already existent channels with location
     # information.
     elif query.count() == 1:
         channel = query.first()
-        old_channel = copy.copy(channel)
     else:
         # This should never happen. Just a safety measure. Should
         # already be covered by constraints within the database.
@@ -124,6 +120,5 @@ def add_or_update_channel(open_session, network, station, location, channel,
         channel.longitude = longitude
         channel.elevation_in_m = elevation
     open_session.add(channel)
-    open_session.commit()
 
-    return channel, old_channel
+    return channel

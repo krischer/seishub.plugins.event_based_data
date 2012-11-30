@@ -99,3 +99,9 @@ class WaveformChannelObject(Base):
     is_synthetic = Column(Boolean, nullable=False)
     # The metadata can be any XML document stored in the database.
     metadata_resource_id = Column(Integer, nullable=True)
+
+    # Add relationsships to enable two way bindings.
+    channel = relationship("ChannelObject",
+        backref=backref("waveform_channel", order_by=id))
+    filepath = relationship("FilepathObject",
+        backref=backref("waveform_channel", order_by=id))
