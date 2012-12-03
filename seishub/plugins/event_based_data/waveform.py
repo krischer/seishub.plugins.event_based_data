@@ -181,6 +181,6 @@ class WaveformUploader(Component):
 
             # Remove the file if something failes..
             os.remove(filename)
-            msg = e.message + " Rolling back all changes."
+            msg = e.message + " - Rolling back all changes."
             raise InternalServerError(msg)
         session.close()
