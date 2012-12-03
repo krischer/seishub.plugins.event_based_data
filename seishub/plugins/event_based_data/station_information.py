@@ -8,6 +8,7 @@ from seishub.core.packages.interfaces import IMapper
 from obspy.core import UTCDateTime
 from obspy.xseed import Parser
 import os
+from sqlalchemy.exc import IntegrityError
 
 from table_definitions import ChannelMetadataObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
@@ -129,9 +130,24 @@ class StationInformationUploader(Component):
             session.rollback()
             session.close()
 
-            # Remove the file if something failes..
-            os.remove(filename)
             msg = e.message + " Rolling back all changes."
+            # It is possible that two files with different hashes contain
+            # information about exactly the same time span. In this case the
+            # uniqueness constrains of the database will complain and an
+            # integrity error will be raised. Catch it to give a meaningful
+            # error message.
+            if isinstance(e, IntegrityError):
+                msg = ("\nThe information for the following timespan is "
+                    "already existant in the database:\n")
+                msg += "%s.%s.%s.%s - %s-%s\n" % (channel["network"],
+                    channel["station"], channel["location"],
+                    channel["channel"], str(channel["starttime"]),
+                    str(channel["endtime"]))
+                msg += ("All information contained in this file will not be "
+                    "added to the database.")
+            # Remove the file if something failed.
+            os.remove(filename)
+            self.env.log.error(msg)
             raise InternalServerError(msg)
         session.close()
 
@@ -140,19 +156,48 @@ class StationInformationUploader(Component):
         Attempts to read the file as a RESP file. Returns False if no channels
         are found.
         """
-        def _parse_time_string(time_string):
+        def _parse_time_string(datetime_string):
             """
             Helper function to parser the time strings.
             """
-            if not time_string[:4].isdigit():
+            print datetime_string
+            # No time is often indicated with the string "No Ending Time". In
+            # this case only "Time" would be passed to this function.
+            if datetime_string.lower() == "time":
                 return None
-            year, julday, time = time_string.split(",")
-            hour, minute, second = time.split(":")
-            year, julday, hour, minute, second = map(int, (year, julday, hour,
-                minute, second))
-            time = UTCDateTime(year=year, julday=julday, hour=hour,
-                minute=minute, second=second)
-            return time
+            dt = datetime_string.split(",")
+            # Parse 2003,169
+            if len(dt) == 2:
+                year, julday = map(int, dt)
+                return UTCDateTime(year=year, julday=julday)
+            # Parse 2003,169,00:00:00.0000 and 2009,063,11
+            elif len(dt) == 3:
+                # Parse 2009,063,11
+                if dt[2].isdigit():
+                    year, julday, hour = map(int, dt)
+                    return UTCDateTime(year=year, julday=julday, hour=hour)
+                # Parse 2003,169,00:00:00.0000
+                year, julday = map(int, dt[:2])
+                time_split = dt[-1].split(":")
+                if len(time_split) == 3:
+                    hour, minute, second = time_split
+                    # Add the seconds seperately because the constructor does
+                    # not accept seconds as floats.
+                    return UTCDateTime(year=year, julday=julday,
+                        hour=int(hour), minute=int(minute)) + float(second)
+                elif len(time_split) == 2:
+                    hour, minute = map(int, time_split)
+                    return UTCDateTime(year=year, julday=julday,
+                        hour=int(hour), minute=int(minute))
+                else:
+                    msg = "Unknown datetime representation %s in RESP file." \
+                        % datetime_string
+                    raise NotImplementedError(msg)
+            else:
+                msg = "Unknown datetime representation %s in RESP file." % \
+                    datetime_string
+                raise NotImplementedError(msg)
+
         channels = []
 
         # Set all to None.
@@ -196,7 +241,10 @@ class StationInformationUploader(Component):
                         "format": "RESP",
                         "start_date": current_startdate,
                         "end_date": current_enddate}
-                    channels.append(channel)
+                    # Some files contain the same information twice. If it is
+                    # within one file consider it to be ok.
+                    if not channel in channels:
+                        channels.append(channel)
                 # Set to None again to start the next round.
                 current_network = current_station = current_location = \
                     current_channel = current_startdate = current_enddate = \
