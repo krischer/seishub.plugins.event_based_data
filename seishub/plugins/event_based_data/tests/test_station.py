@@ -18,7 +18,7 @@ import StringIO
 import tempfile
 import unittest
 
-from seishub.core.exceptions import InvalidObjectError
+from seishub.core.exceptions import InvalidObjectError, DuplicateObjectError
 from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, POST
 
@@ -185,7 +185,22 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         # an InvalidObjectError.
         self.assertRaises(InvalidObjectError, proc.run, POST,
             "/event_based_data/resource/station", data)
-        self.assertEqual(InvalidObjectError.code, 409)
+
+    def test_uploadingTheSameFileTwiceFails(self):
+        """
+        Uploading the same file twice should raise an error.
+        """
+        proc = Processor(self.env)
+        xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
+        with open(xseed_file, "rb") as open_file:
+            data = StringIO.StringIO(open_file.read())
+        data.seek(0, 0)
+
+        # Upload once.
+        proc.run(POST, "/event_based_data/resource/station", data)
+        # Once more should fail. Also code 409 but a different error.
+        self.assertRaises(DuplicateObjectError, proc.run, POST,
+            "/event_based_data/resource/station", data)
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
