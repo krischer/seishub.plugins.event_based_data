@@ -4,33 +4,12 @@ Event-based data plug-in for SeisHub.
 """
 from seishub.core.core import Component, implements
 from seishub.core.config import Option
-from seishub.core.packages.installer import registerIndex, registerSchema, \
-    registerStylesheet
+from seishub.core.packages.installer import registerIndex
 from seishub.core.packages.interfaces import IPackage, IResourceType
 
-import inspect
 import os
 
 from table_definitions import Base
-
-
-def get_path(*args):
-    """
-    Helper function to get the absolute path of files in this directory or a
-    subdirectory thereof.
-
-    This function takes care of cross-platform and other issues and should just
-    work.
-
-    Example:
-        Suppose you want to get the path of the file "schema.xsd" in the "xsd"
-        directory:
-            path = get_path("xsd", "schema.xsd")
-
-    """
-    this_dir = os.path.dirname(os.path.abspath(inspect.getfile(
-        inspect.currentframe())))
-    return os.path.join(this_dir, *args)
 
 
 class EventBasedDataPackage(Component):
