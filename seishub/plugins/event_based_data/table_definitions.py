@@ -23,20 +23,33 @@ Base = declarative_base()
 
 class ChannelObject(Base):
     """
-    Database table containing channel information. Lat/lng/depth are nullable
-    because they do not necessarily need to be known. Should be filled once
-    known!
+    Database table containing channel information.
     """
     __tablename__ = "ebd_channels"
     # Every channel can only appear once
-    __table_args__ = (UniqueConstraint("network", "station", "location",
-        "channel"), {})
+    __table_args__ = (UniqueConstraint("station_id", "location", "channel"),
+        {})
+    id = Column(Integer, primary_key=True)
+    station_id = Column(Integer, ForeignKey("ebd_stations.id"), nullable=False)
+    location = Column(String, nullable=False, index=True)
+    channel = Column(String, nullable=False, index=True)
 
+    station = relationship("StationObject",
+        backref=backref("channel", order_by=id))
+
+
+class StationObject(Base):
+    """
+    Table containing informations about all stations. Lat/lng/depth are
+    nullable because they do not necessarily need to be known. Should be filled
+    once known!
+    """
+    __tablename__ = "ebd_stations"
+    # Every station can only appear once!
+    __table_args__ = (UniqueConstraint("network", "station"), {})
     id = Column(Integer, primary_key=True)
     network = Column(String, nullable=False, index=True)
     station = Column(String, nullable=False, index=True)
-    location = Column(String, nullable=False, index=True)
-    channel = Column(String, nullable=False, index=True)
     latitude = Column(Float, nullable=True, index=True)
     longitude = Column(Float, nullable=True, index=True)
     elevation_in_m = Column(Float, nullable=True, index=True)

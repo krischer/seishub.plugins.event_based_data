@@ -9,13 +9,13 @@ Shared utility function.
     GNU Lesser General Public License, Version 3
     (http://www.gnu.org/copyleft/lesser.html)
 """
-from seishub.core.exceptions import DuplicateObjectError, InternalServerError
+from seishub.core.exceptions import DuplicateObjectError
 
 import datetime
 import hashlib
 import os
 
-from table_definitions import ChannelObject, FilepathObject
+from table_definitions import ChannelObject, FilepathObject, StationObject
 
 
 def check_if_file_exist_in_db(data, env):
@@ -88,37 +88,44 @@ def add_filepath_to_database(open_session, filepath, filesize, md5_hash):
 def add_or_update_channel(open_session, network, station, location, channel,
     latitude, longitude, elevation):
     """
-    Adds the channel with the given parameters. If it already exists and does
-    not yet have coordinates, those will be added.
+    Adds the channel with the given parameters. It will add station and channel
+    objects as appropriate. Will add the coordinates to the station if it does
+    not have coordinates yet.
 
-    In any case the object from SQLAlchemy's ORM will be returned. It
-    furthermore returns the old version of the channel row. Useful for rolling
-    back changes if something goes bad later on.
+    Returns the channel object from SQLAlchemy's ORM.
     """
-    # Find the potentially already existing channel.
-    query = open_session.query(ChannelObject)\
-        .filter(ChannelObject.network == network)\
-        .filter(ChannelObject.station == station)\
+    # Find the potentially already existing station in the database, otherwise
+    # create it. In any case, the station_object variable will contain the
+    # current station at the end of the block.
+    station_query = open_session.query(StationObject)\
+        .filter(StationObject.network == network)\
+        .filter(StationObject.station == station)
+    if station_query.count() == 0:
+        station_object = StationObject(network=network, station=station)
+    else:
+        station_object = station_query.one()
+
+    # Check if the channel already exists in the database, if not create it and
+    # set the correct foreign key.
+    channel_query = open_session.query(ChannelObject).join(StationObject)\
+        .filter(StationObject.network == network)\
+        .filter(StationObject.station == station)\
         .filter(ChannelObject.location == location)\
         .filter(ChannelObject.channel == channel)
-    if query.count() == 0:
-        channel = ChannelObject(network=network,
-            station=station, channel=channel,
-            location=location)
-    # Also update already existent channels with location
-    # information.
-    elif query.count() == 1:
-        channel = query.first()
+    if channel_query.count() == 0:
+        channel_object = ChannelObject(channel=channel, location=location,
+            station=station_object)
     else:
-        # This should never happen. Just a safety measure. Should
-        # already be covered by constraints within the database.
-        msg = "Duplicate channel in the channel database."
-        raise InternalServerError(msg)
-    if latitude and longitude and elevation and (not channel.latitude or
-        not channel.longitude or not channel.elevation_in_m):
-        channel.latitude = latitude
-        channel.longitude = longitude
-        channel.elevation_in_m = elevation
-    open_session.add(channel)
+        channel_object = channel_query.one()
 
-    return channel
+    if latitude and longitude and elevation and (not station_object.latitude or
+        not station_object.longitude or not station_object.elevation_in_m):
+        station_object.latitude = latitude
+        station_object.longitude = longitude
+        station_object.elevation_in_m = elevation
+
+    # Add both to the open session.
+    open_session.add(station_object)
+    open_session.add(channel_object)
+
+    return channel_object

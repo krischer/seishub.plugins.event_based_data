@@ -130,7 +130,9 @@ class StationInformationUploader(Component):
             session.rollback()
             session.close()
 
-            msg = e.message + " Rolling back all changes."
+            # Attempt to return a meaningfull error message.
+            msg = ("(%s) " % e.__class__.__name__) + e.message + \
+                " -- Rolling back all changes."
             # It is possible that two files with different hashes contain
             # information about exactly the same time span. In this case the
             # uniqueness constrains of the database will complain and an
@@ -160,7 +162,6 @@ class StationInformationUploader(Component):
             """
             Helper function to parser the time strings.
             """
-            print datetime_string
             # No time is often indicated with the string "No Ending Time". In
             # this case only "Time" would be passed to this function.
             if datetime_string.lower() == "time":
