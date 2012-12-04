@@ -25,7 +25,7 @@ class StationInformationUploader(Component):
 
     The full upload URL looks like this:
 
-    SEISHUB_SERVER/event_based_data/station/upload
+    SEISHUB_SERVER/event_based_data/resource/station
 
     Waveforms will be stored in the path specified in the config file at:
         [event_based_data] station_filepath.
@@ -43,7 +43,7 @@ class StationInformationUploader(Component):
 
     package_id = "event_based_data"
     version = "0.0.0."
-    mapping_url = "/event_based_data/station/upload"
+    mapping_url = "/event_based_data/resource/station"
 
     def process_GET(self, request):
         """
@@ -98,7 +98,7 @@ class StationInformationUploader(Component):
         try:
             # Add information about the uploaded file into the database.
             filepath = add_filepath_to_database(session, filename, len(data),
-                    md5_hash)
+                    md5_hash, is_managed_by_seishub=True)
             # Loop over all channels.
             for channel in channels:
                 # Add the channel if it does not already exists, or update the
@@ -138,7 +138,7 @@ class StationInformationUploader(Component):
             # uniqueness constrains of the database will complain and an
             # integrity error will be raised. Catch it to give a meaningful
             # error message.
-            if isinstance(e, IntegrityError):
+            if isinstance(e, IntegrityError) and hasattr(channel, "starttime"):
                 msg = ("\nThe information for the following timespan is "
                     "already existant in the database:\n")
                 msg += "%s.%s.%s.%s - %s-%s\n" % (channel["network"],

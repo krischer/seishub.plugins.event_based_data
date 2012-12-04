@@ -9,6 +9,7 @@ A test suite for station uploading.
     GNU Lesser General Public License, Version 3
     (http://www.gnu.org/copyleft/lesser.html)
 """
+import datetime
 import inspect
 from obspy import UTCDateTime
 import os
@@ -18,7 +19,11 @@ import tempfile
 import unittest
 
 from seishub.core.test import SeisHubEnvironmentTestCase
+from seishub.core.processor import Processor, POST
+
 from seishub.plugins.event_based_data import package, station_information
+from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
+    StationObject, ChannelObject, ChannelMetadataObject
 
 
 class StationTestCase(SeisHubEnvironmentTestCase):
@@ -29,7 +34,14 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         self.env.tree.update()
         # Create a temporary directory where things are stored.
         self.tempdir = tempfile.mkdtemp()
-        # Directory with the data files.
+        # Set the filepaths for the plug-in to the temporary directory so all
+        # files will be written there.
+        self.env.config.set("event_based_data", "station_filepath",
+            os.path.join(self.tempdir, "station_data"))
+        self.env.config.set("event_based_data", "waveform_filepath",
+            os.path.join(self.tempdir, "waveform_data"))
+
+        # Directory with the data test files.
         self.data_dir = os.path.join(os.path.dirname(os.path.abspath(
             inspect.getfile(inspect.currentframe()))), "data")
 
@@ -37,6 +49,60 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         self.env.registry.db_deletePackage("event_based_data")
         # Remove the temporary directory.
         shutil.rmtree(self.tempdir)
+
+    def test_RESPFileUploading(self):
+        """
+        Tests the uploading via POST of a station RESP file. This is a rather
+        extensive test case and test all steps.
+        """
+        proc = Processor(self.env)
+        resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
+        with open(resp_file, "r") as open_file:
+            data = StringIO.StringIO(open_file.read())
+        data.seek(0, 0)
+
+        # Upload the data
+        proc.run(POST, "/event_based_data/resource/station", data)
+
+        # Get the filepath object. Database should only contain one!
+        session = self.env.db.session(bind=self.env.db.engine)
+        filepath_object = session.query(FilepathObject).one()
+
+        # Check that the filepath stored in the database contains a file that
+        # is identical to the input file.
+        with open(filepath_object.filepath, "r") as open_file:
+            actually_stored_file = open_file.read()
+        data.seek(0, 0)
+        expected_stored_file = data.read()
+        self.assertEqual(expected_stored_file, actually_stored_file)
+        # The filepath in this case is also managed by SeisHub.
+        self.assertEqual(filepath_object.is_managed_by_seishub, True)
+
+        # Now check the databases. Should contain exactly one entry in the
+        # station table, one in the channels table and one in the metadata
+        # table.
+        station = session.query(StationObject).one()
+        channel = session.query(ChannelObject).one()
+        # Assert the station information
+        self.assertEqual(station.network, "PM")
+        self.assertEqual(station.station, "PFVI")
+        # RESP files do not contain coordinates.
+        self.assertEqual(station.latitude, None)
+        self.assertEqual(station.longitude, None)
+        self.assertEqual(station.elevation_in_m, None)
+        # Assert the channel information.
+        self.assertEqual(channel.location, "")
+        self.assertEqual(channel.channel, "BHZ")
+        self.assertTrue(channel.station is station)
+
+        # Check the channel_metadata
+        metadata = session.query(ChannelMetadataObject).one()
+        self.assertEqual(metadata.starttime, datetime.datetime(2007, 1, 1))
+        self.assertEqual(metadata.endtime, None)
+        self.assertEqual(metadata.format, "RESP")
+        # Check the relationships.
+        self.assertTrue(metadata.filepath is filepath_object)
+        self.assertTrue(metadata.channel is channel)
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
@@ -123,6 +189,7 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(StationUtilityFunctionsTestCase, "test"))
+    suite.addTest(unittest.makeSuite(StationTestCase, "test"))
     return suite
 
 

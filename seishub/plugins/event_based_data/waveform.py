@@ -137,7 +137,7 @@ class WaveformUploader(Component):
         try:
             # Add information about the uploaded file into the database.
             filepath = add_filepath_to_database(session, filename, len(data),
-                    md5_hash)
+                    md5_hash, is_managed_by_seishub=True)
 
             # Loop over all traces in the file.
             for trace in st:

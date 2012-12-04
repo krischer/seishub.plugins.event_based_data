@@ -71,16 +71,19 @@ def write_string_to_filesystem(filename, string):
     return filename
 
 
-def add_filepath_to_database(open_session, filepath, filesize, md5_hash):
+def add_filepath_to_database(open_session, filepath, filesize, md5_hash,
+        is_managed_by_seishub):
     """
     Add information about a filepath to the database. Expects an open
     SQLAlchemy session.
 
     Returns the Column object.
     """
+    filepath = os.path.abspath(filepath)
     # Add information about the uploaded file into the database.
     filepath = FilepathObject(filepath=filepath, size=filesize,
-        mtime=datetime.datetime.now(), md5_hash=md5_hash)
+        mtime=datetime.datetime.now(), md5_hash=md5_hash,
+        is_managed_by_seishub=is_managed_by_seishub)
     open_session.add(filepath)
     return filepath
 
