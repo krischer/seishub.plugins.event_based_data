@@ -18,6 +18,7 @@ import StringIO
 import tempfile
 import unittest
 
+from seishub.core.exceptions import InvalidObjectError
 from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, POST
 
@@ -172,6 +173,19 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         # Check the channel references.
         channels_from_metadata = [_i.channel for _i in metadatas]
         self.assertEqual(sorted(channels), sorted(channels_from_metadata))
+
+    def test_uploadingInvalidResourceFails(self):
+        """
+        Uploading an invalid station resource should raise.
+        """
+        proc = Processor(self.env)
+        data = StringIO.StringIO("asldjfklasdjfjdiojvbaeiogjqio34j5903jedio")
+        data.seek(0, 0)
+        # Uploading should raise a 409 code which in this case corresponds to
+        # an InvalidObjectError.
+        self.assertRaises(InvalidObjectError, proc.run, POST,
+            "/event_based_data/resource/station", data)
+        self.assertEqual(InvalidObjectError.code, 409)
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
