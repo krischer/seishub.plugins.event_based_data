@@ -66,6 +66,10 @@ class FilepathObject(Base):
     size = Column(Integer, nullable=False)
     mtime = Column(DateTime, nullable=False)
     md5_hash = Column(String, nullable=False)
+    # This flag determines whether or not the file is managed by SeisHub. If it
+    # is managed by SeisHub, SeisHub has the right to move, rename, and delete
+    # the file. Otherwise it will never touch the file.
+    is_managed_by_seishub = Column(Boolean, nullable=False)
 
 
 class ChannelMetadataObject(Base):
