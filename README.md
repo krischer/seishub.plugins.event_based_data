@@ -1,7 +1,9 @@
 ## API Definition
 
 `BASE` always refers to the base SeisHub URL of the server including the port
-number.
+number. Most data is bound to a certain event. In that case the event argument
+in the form `event=EVENT_NAME` is appended to the url. This in unified across
+all event bound data types.
 
 ### Station data
 
@@ -46,7 +48,7 @@ All waveform formats supported by ObsPy can be uploaded. Every waveform needs
 to be bound to an already existing event
 
 #### Upload a new waveform file:
-`POST BASE/event_based_data/resource/event/waveform`
+`POST BASE/event_based_data/resource/waveform?event=EVENT_NAME`
 
 #### Get a list of all waveform for a given event
-`GET BASE/event_based_data/resource/event/waveform`
+`GET BASE/event_based_data/resource/waveform?event=EVENT_NAME`
