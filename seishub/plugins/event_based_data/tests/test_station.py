@@ -104,6 +104,75 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         self.assertTrue(metadata.filepath is filepath_object)
         self.assertTrue(metadata.channel is channel)
 
+    def test_XSEEDFileUploading(self):
+        """
+        Tests the uploading via POST of a XSEED RESP file. This is a rather
+        extensive test case and test all steps.
+        """
+        proc = Processor(self.env)
+        xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
+        with open(xseed_file, "rb") as open_file:
+            data = StringIO.StringIO(open_file.read())
+        data.seek(0, 0)
+
+        # Upload the data
+        proc.run(POST, "/event_based_data/resource/station", data)
+
+        # Get the filepath object. Database should only contain one!
+        session = self.env.db.session(bind=self.env.db.engine)
+        filepath_object = session.query(FilepathObject).one()
+
+        # Check that the filepath stored in the database contains a file that
+        # is identical to the input file.
+        with open(filepath_object.filepath, "rb") as open_file:
+            actually_stored_file = open_file.read()
+        data.seek(0, 0)
+        expected_stored_file = data.read()
+        self.assertEqual(expected_stored_file, actually_stored_file)
+        # The filepath in this case is also managed by SeisHub.
+        self.assertEqual(filepath_object.is_managed_by_seishub, True)
+
+        # Now check the databases. Should contain exactly one entry in the
+        # station table, three in the channels table and three in the metadata
+        # table.
+        station = session.query(StationObject).one()
+        channels = session.query(ChannelObject).all()
+        self.assertEqual(len(channels), 3)
+        # Assert the station information
+        self.assertEqual(station.network, "GR")
+        self.assertEqual(station.station, "GEC2")
+        self.assertEqual(station.latitude, 48.845085)
+        self.assertEqual(station.longitude, 13.701584)
+        self.assertEqual(station.elevation_in_m, 1132.5)
+        # Assert the channel information. Location + station should be the same
+        # for all.
+        for channel in channels:
+            self.assertTrue(channel.station is station)
+            self.assertEqual(channel.location, "")
+        # Three different channels should be given.
+        channel_names = ["HHE", "HHN", "HHZ"]
+        for channel in channels:
+            self.assertTrue(channel.channel in channel_names)
+            channel_names.pop(channel_names.index(channel.channel))
+        self.assertEqual(len(channel_names), 0)
+
+        # Check the channel_metadata
+        metadatas = session.query(ChannelMetadataObject).all()
+        self.assertEqual(len(metadatas), 3)
+        # The metadata should actually be identical for all, except the channel
+        # id.
+        for metadata in metadatas:
+            self.assertEqual(metadata.starttime,
+                datetime.datetime(2002, 8, 8, 12))
+            self.assertEqual(metadata.endtime, None)
+            self.assertEqual(metadata.format, "XSEED")
+            # Check the relationships.
+            self.assertTrue(metadata.filepath is filepath_object)
+
+        # Check the channel references.
+        channels_from_metadata = [_i.channel for _i in metadatas]
+        self.assertEqual(sorted(channels), sorted(channels_from_metadata))
+
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
     """
@@ -128,17 +197,17 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
         channels = station_information._read_SEED(data)
         self.assertEqual(len(channels), 3)
         self.assertEqual(channels,
-        [{"network": "GR", "end_date": "", "format": "SEED",
+        [{"network": "GR", "end_date": "", "format": "XSEED",
             "elevation": 1132.5, "longitude": 13.701584,
             "instrument": "STS2", "station": "GEC2", "location": "",
             "latitude": 48.845085,
             "start_date": UTCDateTime(2002, 8, 8, 12, 0), "channel": "HHE"},
-        {"network": "GR", "end_date": "", "format": "SEED",
+        {"network": "GR", "end_date": "", "format": "XSEED",
             "elevation": 1132.5, "longitude": 13.701584,
             "instrument": "STS2", "station": "GEC2", "location": "",
             "latitude": 48.845085,
             "start_date": UTCDateTime(2002, 8, 8, 12, 0), "channel": "HHN"},
-        {"network": "GR", "end_date": "", "format": "SEED",
+        {"network": "GR", "end_date": "", "format": "XSEED",
             "elevation": 1132.5, "longitude": 13.701584,
             "instrument": "STS2", "station": "GEC2", "location": "",
             "latitude": 48.845085,
