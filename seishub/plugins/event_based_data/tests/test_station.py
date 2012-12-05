@@ -23,47 +23,21 @@ from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, POST
 
 from seishub.plugins.event_based_data import package, station_information
+from seishub.plugins.event_based_data.tests.test_case import \
+    EventBasedDataTestCase
 from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
     StationObject, ChannelObject, ChannelMetadataObject
 
 
-class StationTestCase(SeisHubEnvironmentTestCase):
-    def setUp(self):
-        self.env.enableComponent(package.EventBasedDataPackage)
-        self.env.enableComponent(
-            station_information.StationInformationUploader)
-        self.env.tree.update()
-        # Create a temporary directory where things are stored.
-        self.tempdir = tempfile.mkdtemp()
-        # Set the filepaths for the plug-in to the temporary directory so all
-        # files will be written there.
-        self.env.config.set("event_based_data", "station_filepath",
-            os.path.join(self.tempdir, "station_data"))
-        self.env.config.set("event_based_data", "waveform_filepath",
-            os.path.join(self.tempdir, "waveform_data"))
-
-        # Directory with the data test files.
-        self.data_dir = os.path.join(os.path.dirname(os.path.abspath(
-            inspect.getfile(inspect.currentframe()))), "data")
-
-    def tearDown(self):
-        self.env.registry.db_deletePackage("event_based_data")
-        # Remove the temporary directory.
-        shutil.rmtree(self.tempdir)
+class StationTestCase(EventBasedDataTestCase):
 
     def test_RESPFileUploading(self):
         """
         Tests the uploading via POST of a station RESP file. This is a rather
         extensive test case and test all steps.
         """
-        proc = Processor(self.env)
-        resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
-        with open(resp_file, "r") as open_file:
-            data = StringIO.StringIO(open_file.read())
-        data.seek(0, 0)
-
-        # Upload the data
-        proc.run(POST, "/event_based_data/station", data)
+        data = self._send_request("POST", os.path.join(self.data_dir,
+            "RESP.PM.PFVI..BHZ"), "/event_based_data/station")
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -73,9 +47,7 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         # is identical to the input file.
         with open(filepath_object.filepath, "r") as open_file:
             actually_stored_file = open_file.read()
-        data.seek(0, 0)
-        expected_stored_file = data.read()
-        self.assertEqual(expected_stored_file, actually_stored_file)
+        self.assertEqual(data, actually_stored_file)
         # The filepath in this case is also managed by SeisHub.
         self.assertEqual(filepath_object.is_managed_by_seishub, True)
 

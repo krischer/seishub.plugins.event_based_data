@@ -28,7 +28,7 @@ class WaveformUploader(Component):
 
     A full upload URL can look like this:
 
-    SEISHUB_SERVER/event_based_data/waveform/upload?event_resource_name=event_1
+    SEISHUB_SERVER/event_based_data/waveform?event=EVENT_NAME
 
     By default the data will be assumed to be real data. Passing
     is_synthetic=true to the URL will make it a synthetic waveform.
@@ -49,7 +49,7 @@ class WaveformUploader(Component):
 
     package_id = "event_based_data"
     version = "0.0.0."
-    mapping_url = "/event_based_data/waveform/upload"
+    mapping_url = "/event_based_data/waveform"
 
     def process_GET(self, request):
         """
@@ -65,7 +65,7 @@ class WaveformUploader(Component):
         aforementioned URL.
         """
         # Parse the given parameters.
-        event_id = request.args0.get("event_resource_name", None)
+        event_id = request.args0.get("event", None)
         is_synthetic = request.args0.get("is_synthetic", None)
         if isinstance(is_synthetic, basestring) and \
             is_synthetic.lower() in lowercase_true_strings:

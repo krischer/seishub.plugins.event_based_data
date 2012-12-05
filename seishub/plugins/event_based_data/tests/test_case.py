@@ -50,16 +50,20 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Remove the temporary directory.
         shutil.rmtree(self.tempdir)
 
-    def _upload_file(self, filename, method, url):
+    def _send_request(self, method, filename, url):
         """
         Uploads a file with the given method to the given url.
 
-        :type filename: str
-        :param filename: str
         :type method: str
         :param method: GET, POST, PUT, or DELETE
+        :type filename: str or None
+        :param filename: The file to upload. If None, then nothing will be
+            uploaded.
         :type url: str
         :param url: The url to upload to
+
+        Returns the data from the file as a StringIO with the pointer set to 0
+        if a file has been read.
         """
         if method.upper() == "GET":
             method = GET
@@ -74,15 +78,22 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
             raise ValueError(msg)
 
         proc = Processor(self.env)
-        with open(filename, "r") as open_file:
-            data = StringIO.StringIO(open_file.read())
-        data.seek(0, 0)
+        if filename:
+            with open(filename, "r") as open_file:
+                data = StringIO.StringIO(open_file.read())
+            data.seek(0, 0)
+        else:
+            data = None
         proc.run(method, url, data)
+        if data:
+            data.seek(0, 0)
+            return data.read()
+
 
     def _upload_event(self):
         """
         Waveform data has to be bound to an event. This convenience functions
         uploads a simple example event, named 'example_event'.
         """
-        self._upload_file("POST", os.path.join(self.data_dir,
+        self._send_request("POST", os.path.join(self.data_dir,
             "example_event.xml"), "/xml/event_based_data/event/example_event")
