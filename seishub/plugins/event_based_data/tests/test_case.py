@@ -27,8 +27,10 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
     def setUp(self):
         # Enable the package.
         self.env.enableComponent(package.EventBasedDataPackage)
+        # Enable the XML resources
+        self.env.enableComponent(package.EventResourceType)
+        # Enable the mappers.
         self.env.enableComponent(
-        # Enable the components.
             station_information.StationInformationUploader)
         self.env.enableComponent(waveform.WaveformUploader)
         self.env.tree.update()
@@ -46,21 +48,28 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
             inspect.getfile(inspect.currentframe()))), "data")
 
     def tearDown(self):
+        # Delete the resource types.
+        self.env.registry.db_deleteResourceType('event_based_data', 'event')
+        # Delete the package.
         self.env.registry.db_deletePackage("event_based_data")
         # Remove the temporary directory.
         shutil.rmtree(self.tempdir)
 
-    def _send_request(self, method, url, file_or_fileobject):
+    def _send_request(self, method, url, file_or_fileobject, args=None):
         """
         Uploads a file with the given method to the given url.
 
-        :type method: str
+        :type method: string
         :param method: GET, POST, PUT, or DELETE
-        :type url: str
+        :type url: string
         :param url: The url to upload to
-        :type file_or_fileobject: str or None
+        :type file_or_fileobject: string or file-like object
         :param file_or_fileobject: The file or file like object to upload. If
             None, then nothing will be uploaded.
+        :type args: dictionary
+        :param args: The arguments of the request. This is the same as any
+        parameters appended to the URL.
+
 
         file_or_fileobject can be either a StringIO with some data or a
         filename.
@@ -81,6 +90,9 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
             raise ValueError(msg)
 
         proc = Processor(self.env)
+        # Append potential arguments.
+        if args:
+            proc.args0 = args
         if file_or_fileobject:
             if not hasattr(file_or_fileobject, "read") or \
                 not hasattr(file_or_fileobject, "seek"):
@@ -98,5 +110,6 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         Waveform data has to be bound to an event. This convenience functions
         uploads a simple example event, named 'example_event'.
         """
-        self._send_request("POST", os.path.join(self.data_dir,
-            "example_event.xml"), "/xml/event_based_data/event/example_event")
+        event_file = os.path.join(self.data_dir, "example_event.xml")
+        self._send_request("POST", "/xml/event_based_data/event/example_event",
+            event_file)

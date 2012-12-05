@@ -21,7 +21,9 @@ from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
 
 
 class WaveformTestCase(EventBasedDataTestCase):
-
+    """
+    Test case for the waveform resource.
+    """
     def test_uploadingWithoutSpecifyingAnEventFails(self):
         """
         Waveforms are always bound to an event. Uploading without one fails.
@@ -31,6 +33,17 @@ class WaveformTestCase(EventBasedDataTestCase):
         # Uploading without specifying an event fails.
         self.assertRaises(InvalidParameterError, self._send_request, "POST",
             "/event_based_data/waveform", waveform_file)
+
+    def test_uploadingSingleSACFile(self):
+        """
+        Extensive test for a uploading a single sac file.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event"})
 
 
 def suite():

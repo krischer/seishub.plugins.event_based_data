@@ -26,6 +26,9 @@ from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
 
 
 class StationTestCase(EventBasedDataTestCase):
+    """
+    Test case for the station resource.
+    """
     def test_RESPFileUploading(self):
         """
         Tests the uploading via POST of a station RESP file. This is a rather
