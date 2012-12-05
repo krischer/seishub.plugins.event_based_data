@@ -98,7 +98,7 @@ class StationInformationUploader(Component):
         try:
             # Add information about the uploaded file into the database.
             filepath = add_filepath_to_database(session, filename, len(data),
-                    md5_hash, is_managed_by_seishub=True)
+                md5_hash, is_managed_by_seishub=True)
             # Loop over all channels.
             for channel in channels:
                 # Add the channel if it does not already exists, or update the
