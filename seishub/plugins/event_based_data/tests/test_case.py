@@ -62,6 +62,9 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         :type url: str
         :param url: The url to upload to
 
+        file_or_fileobject can be either a StringIO with some data or a
+        filename.
+
         Returns the data from the file as a StringIO with the pointer set to 0
         if a file has been read.
         """
@@ -74,7 +77,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         elif method.upper() == "DELETE":
             method = DELETE
         else:
-            msg = "Unknown method '%s'" % method
+            msg = "Unknown method '%s'." % method
             raise ValueError(msg)
 
         proc = Processor(self.env)
@@ -83,14 +86,12 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
                 not hasattr(file_or_fileobject, "seek"):
                 with open(file_or_fileobject, "r") as open_file:
                     file_or_fileobject = StringIO.StringIO(open_file.read())
-                file_or_fileobject.seek(0, 0)
         else:
             file_or_fileobject = None
         proc.run(method, url, file_or_fileobject)
         if file_or_fileobject:
             file_or_fileobject.seek(0, 0)
             return file_or_fileobject.read()
-
 
     def _upload_event(self):
         """
