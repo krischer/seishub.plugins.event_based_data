@@ -25,7 +25,7 @@ class StationInformationUploader(Component):
 
     The full upload URL looks like this:
 
-    SEISHUB_SERVER/event_based_data/resource/station
+    SEISHUB_SERVER/event_based_data/station
 
     Waveforms will be stored in the path specified in the config file at:
         [event_based_data] station_filepath.
@@ -43,7 +43,7 @@ class StationInformationUploader(Component):
 
     package_id = "event_based_data"
     version = "0.0.0."
-    mapping_url = "/event_based_data/resource/station"
+    mapping_url = "/event_based_data/station"
 
     def process_GET(self, request):
         """

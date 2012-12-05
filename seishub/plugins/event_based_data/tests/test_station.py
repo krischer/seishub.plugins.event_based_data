@@ -63,7 +63,7 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         data.seek(0, 0)
 
         # Upload the data
-        proc.run(POST, "/event_based_data/resource/station", data)
+        proc.run(POST, "/event_based_data/station", data)
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -117,7 +117,7 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         data.seek(0, 0)
 
         # Upload the data
-        proc.run(POST, "/event_based_data/resource/station", data)
+        proc.run(POST, "/event_based_data/station", data)
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -184,7 +184,7 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         # Uploading should raise a 409 code which in this case corresponds to
         # an InvalidObjectError.
         self.assertRaises(InvalidObjectError, proc.run, POST,
-            "/event_based_data/resource/station", data)
+            "/event_based_data/station", data)
 
     def test_uploadingTheSameFileTwiceFails(self):
         """
@@ -197,10 +197,10 @@ class StationTestCase(SeisHubEnvironmentTestCase):
         data.seek(0, 0)
 
         # Upload once.
-        proc.run(POST, "/event_based_data/resource/station", data)
+        proc.run(POST, "/event_based_data/station", data)
         # Once more should fail. Also code 409 but a different error.
         self.assertRaises(DuplicateObjectError, proc.run, POST,
-            "/event_based_data/resource/station", data)
+            "/event_based_data/station", data)
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):

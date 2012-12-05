@@ -16,13 +16,13 @@ events. Currently the following file formats are accepted:
 
 
 #### Upload a new station:
-`POST BASE/event_based_data/resource/station`
+`POST BASE/event_based_data/station`
 
 #### Get a list of all stations
-`GET BASE/event_based_data/resource/station`
+`GET BASE/event_based_data/station`
 
 #### Get the originally uploaded file of one specific station resource
-`GET BASE/event_based_data/resource/station/STATION_NAME`
+`GET BASE/event_based_data/station/STATION_NAME`
 
 
 ### Event data
@@ -32,12 +32,12 @@ uploading a new event is always the first step. Currently only the QuakeML
 format is accepted.
 
 #### Upload a new, unnamed event
-`POST BASE/event_based_data/resource/event`
+`POST BASE/event_based_data/event`
     which is just an alias for
 `POST BASE/xml/event_based_data/event'
 
 #### Upload a new, named event
-`POST BASE/event_based_data/resource/event/EVENT_NAME`
+`POST BASE/event_based_data/event/EVENT_NAME`
     which is just an alias for
 `POST BASE/xml/event_based_data/event/EVENT_NAME`
 
@@ -48,7 +48,7 @@ All waveform formats supported by ObsPy can be uploaded. Every waveform needs
 to be bound to an already existing event
 
 #### Upload a new waveform file:
-`POST BASE/event_based_data/resource/waveform?event=EVENT_NAME`
+`POST BASE/event_based_data/waveform?event=EVENT_NAME`
 
 #### Get a list of all waveform for a given event
-`GET BASE/event_based_data/resource/waveform?event=EVENT_NAME`
+`GET BASE/event_based_data/waveform?event=EVENT_NAME`
