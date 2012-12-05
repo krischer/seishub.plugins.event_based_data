@@ -50,15 +50,15 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Remove the temporary directory.
         shutil.rmtree(self.tempdir)
 
-    def _send_request(self, method, filename, url):
+    def _send_request(self, method, file_or_fileobject, url):
         """
         Uploads a file with the given method to the given url.
 
         :type method: str
         :param method: GET, POST, PUT, or DELETE
-        :type filename: str or None
-        :param filename: The file to upload. If None, then nothing will be
-            uploaded.
+        :type file_or_fileobject: str or None
+        :param file_or_fileobject: The file or file like object to upload. If
+            None, then nothing will be uploaded.
         :type url: str
         :param url: The url to upload to
 
@@ -78,16 +78,18 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
             raise ValueError(msg)
 
         proc = Processor(self.env)
-        if filename:
-            with open(filename, "r") as open_file:
-                data = StringIO.StringIO(open_file.read())
-            data.seek(0, 0)
+        if file_or_fileobject:
+            if not hasattr(file_or_fileobject, "read") or \
+                not hasattr(file_or_fileobject, "seek"):
+                with open(file_or_fileobject, "r") as open_file:
+                    file_or_fileobject = StringIO.StringIO(open_file.read())
+                file_or_fileobject.seek(0, 0)
         else:
-            data = None
-        proc.run(method, url, data)
-        if data:
-            data.seek(0, 0)
-            return data.read()
+            file_or_fileobject = None
+        proc.run(method, url, file_or_fileobject)
+        if file_or_fileobject:
+            file_or_fileobject.seek(0, 0)
+            return file_or_fileobject.read()
 
 
     def _upload_event(self):

@@ -13,16 +13,12 @@ import datetime
 import inspect
 from obspy import UTCDateTime
 import os
-import shutil
 import StringIO
-import tempfile
 import unittest
 
 from seishub.core.exceptions import InvalidObjectError, DuplicateObjectError
-from seishub.core.test import SeisHubEnvironmentTestCase
-from seishub.core.processor import Processor, POST
 
-from seishub.plugins.event_based_data import package, station_information
+from seishub.plugins.event_based_data import station_information
 from seishub.plugins.event_based_data.tests.test_case import \
     EventBasedDataTestCase
 from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
@@ -36,8 +32,9 @@ class StationTestCase(EventBasedDataTestCase):
         Tests the uploading via POST of a station RESP file. This is a rather
         extensive test case and test all steps.
         """
-        data = self._send_request("POST", os.path.join(self.data_dir,
-            "RESP.PM.PFVI..BHZ"), "/event_based_data/station")
+        resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
+        data = self._send_request("POST", resp_file,
+            "/event_based_data/station")
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -82,14 +79,9 @@ class StationTestCase(EventBasedDataTestCase):
         Tests the uploading via POST of a XSEED RESP file. This is a rather
         extensive test case and test all steps.
         """
-        proc = Processor(self.env)
         xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
-        with open(xseed_file, "rb") as open_file:
-            data = StringIO.StringIO(open_file.read())
-        data.seek(0, 0)
-
-        # Upload the data
-        proc.run(POST, "/event_based_data/station", data)
+        data = self. _send_request("POST", xseed_file,
+            "/event_based_data/station")
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -99,9 +91,7 @@ class StationTestCase(EventBasedDataTestCase):
         # is identical to the input file.
         with open(filepath_object.filepath, "rb") as open_file:
             actually_stored_file = open_file.read()
-        data.seek(0, 0)
-        expected_stored_file = data.read()
-        self.assertEqual(expected_stored_file, actually_stored_file)
+        self.assertEqual(data, actually_stored_file)
         # The filepath in this case is also managed by SeisHub.
         self.assertEqual(filepath_object.is_managed_by_seishub, True)
 
@@ -150,29 +140,23 @@ class StationTestCase(EventBasedDataTestCase):
         """
         Uploading an invalid station resource should raise.
         """
-        proc = Processor(self.env)
         data = StringIO.StringIO("asldjfklasdjfjdiojvbaeiogjqio34j5903jedio")
-        data.seek(0, 0)
         # Uploading should raise a 409 code which in this case corresponds to
         # an InvalidObjectError.
-        self.assertRaises(InvalidObjectError, proc.run, POST,
-            "/event_based_data/station", data)
+        self.assertRaises(InvalidObjectError, self._send_request, "POST", data,
+            "/event_based_data/station")
 
     def test_uploadingTheSameFileTwiceFails(self):
         """
         Uploading the same file twice should raise an error.
         """
-        proc = Processor(self.env)
         xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
-        with open(xseed_file, "rb") as open_file:
-            data = StringIO.StringIO(open_file.read())
-        data.seek(0, 0)
 
         # Upload once.
-        proc.run(POST, "/event_based_data/station", data)
+        self._send_request("POST", xseed_file, "/event_based_data/station")
         # Once more should fail. Also code 409 but a different error.
-        self.assertRaises(DuplicateObjectError, proc.run, POST,
-            "/event_based_data/station", data)
+        self.assertRaises(DuplicateObjectError, self._send_request, "POST",
+            xseed_file, "/event_based_data/station")
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
