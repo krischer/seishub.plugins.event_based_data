@@ -30,7 +30,7 @@ class WaveformTestCase(EventBasedDataTestCase):
 
         # Uploading without specifying an event fails.
         self.assertRaises(InvalidParameterError, self._send_request, "POST",
-            waveform_file, "/event_based_data/waveform")
+            "/event_based_data/waveform", waveform_file)
 
 
 def suite():

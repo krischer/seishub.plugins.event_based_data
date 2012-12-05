@@ -50,17 +50,17 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Remove the temporary directory.
         shutil.rmtree(self.tempdir)
 
-    def _send_request(self, method, file_or_fileobject, url):
+    def _send_request(self, method, url, file_or_fileobject):
         """
         Uploads a file with the given method to the given url.
 
         :type method: str
         :param method: GET, POST, PUT, or DELETE
+        :type url: str
+        :param url: The url to upload to
         :type file_or_fileobject: str or None
         :param file_or_fileobject: The file or file like object to upload. If
             None, then nothing will be uploaded.
-        :type url: str
-        :param url: The url to upload to
 
         file_or_fileobject can be either a StringIO with some data or a
         filename.

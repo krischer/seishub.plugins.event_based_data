@@ -32,8 +32,8 @@ class StationTestCase(EventBasedDataTestCase):
         extensive test case and test all steps.
         """
         resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
-        data = self._send_request("POST", resp_file,
-            "/event_based_data/station")
+        data = self._send_request("POST", "/event_based_data/station",
+            resp_file)
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -79,8 +79,8 @@ class StationTestCase(EventBasedDataTestCase):
         extensive test case and test all steps.
         """
         xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
-        data = self. _send_request("POST", xseed_file,
-            "/event_based_data/station")
+        data = self. _send_request("POST", "/event_based_data/station",
+            xseed_file)
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -142,8 +142,8 @@ class StationTestCase(EventBasedDataTestCase):
         data = StringIO.StringIO("asldjfklasdjfjdiojvbaeiogjqio34j5903jedio")
         # Uploading should raise a 409 code which in this case corresponds to
         # an InvalidObjectError.
-        self.assertRaises(InvalidObjectError, self._send_request, "POST", data,
-            "/event_based_data/station")
+        self.assertRaises(InvalidObjectError, self._send_request, "POST",
+            "/event_based_data/station", data)
 
     def test_uploadingTheSameFileTwiceFails(self):
         """
@@ -152,10 +152,10 @@ class StationTestCase(EventBasedDataTestCase):
         xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
 
         # Upload once.
-        self._send_request("POST", xseed_file, "/event_based_data/station")
+        self._send_request("POST", "/event_based_data/station", xseed_file)
         # Once more should fail. Also code 409 but a different error.
         self.assertRaises(DuplicateObjectError, self._send_request, "POST",
-            xseed_file, "/event_based_data/station")
+            "/event_based_data/station", xseed_file)
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
