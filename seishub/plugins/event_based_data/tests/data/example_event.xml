@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns="http://quakeml.org/xmlns/bed/1.2">
+    <eventParameters publicID="smi:www.iris.edu/ws/event/query">
+        <event publicID="smi:www.iris.edu/ws/event/query?eventId=755871">
+            <type>earthquake</type>
+            <description xmlns:iris="http://www.iris.edu/ws/event" iris:FEcode="72">
+                <type>Flinn-Engdahl region</type>
+                <text>HONDURAS</text>
+            </description>
+            <preferredMagnitudeID>smi:www.iris.edu/ws/event/query?magnitudeId=14233965</preferredMagnitudeID>
+            <preferredOriginID>smi:www.iris.edu/ws/event/query?originId=1594172</preferredOriginID>
+            <origin xmlns:iris="http://www.iris.edu/ws/event" publicID="smi:www.iris.edu/ws/event/query?originId=1594172" iris:contributorOriginId="3112010" iris:contributorEventId="1704900" iris:contributor="ISC" iris:catalog="ISC">
+                <time>
+                    <value>1999-07-11T14:14:16.1200</value>
+                </time>
+                <creationInfo>
+                    <author>ISC</author>
+                </creationInfo>
+                <latitude>
+                    <value>15.788</value>
+                </latitude>
+                <longitude>
+                    <value>-88.319</value>
+                </longitude>
+                <depth>
+                    <value>6.4</value>
+                </depth>
+            </origin>
+            <magnitude publicID="smi:www.iris.edu/ws/event/query?magnitudeId=14233965">
+                <originID>smi:www.iris.edu/ws/event/query?originId=7970442</originID>
+                <type>MW</type>
+                <mag>
+                    <value>6.7</value>
+                </mag>
+                <creationInfo>
+                    <author>GCMT</author>
+                </creationInfo>
+            </magnitude>
+        </event></eventParameters></q:quakeml>

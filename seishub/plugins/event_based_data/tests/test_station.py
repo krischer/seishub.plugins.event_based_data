@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-A test suite for station uploading.
+A test suite for station resources.
 
 :copyright:
     Lion Krischer (krischer@geophysik.uni-muenchen.de), 2012
@@ -26,7 +26,6 @@ from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
 
 
 class StationTestCase(EventBasedDataTestCase):
-
     def test_RESPFileUploading(self):
         """
         Tests the uploading via POST of a station RESP file. This is a rather
