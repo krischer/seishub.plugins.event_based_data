@@ -35,6 +35,17 @@ class WaveformTestCase(EventBasedDataTestCase):
         self.assertRaises(InvalidParameterError, self._send_request, "POST",
             "/event_based_data/waveform", waveform_file)
 
+    def test_unknownEventIdRaises(self):
+        """
+        Uploading while referring to an unknown event id raises.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self.assertRaises(InvalidParameterError, self._send_request, "POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "unknown_event"})
+
     def test_uploadingSingleSACFile(self):
         """
         Extensive test for a uploading a single sac file.
