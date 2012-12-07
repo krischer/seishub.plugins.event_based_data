@@ -16,7 +16,8 @@ import os
 import StringIO
 import unittest
 
-from seishub.core.exceptions import InvalidObjectError, DuplicateObjectError
+from seishub.core.exceptions import InvalidObjectError, DuplicateObjectError, \
+    InvalidParameterError
 
 from seishub.plugins.event_based_data import station_information
 from seishub.plugins.event_based_data.tests.test_case import \
@@ -224,6 +225,22 @@ class StationTestCase(EventBasedDataTestCase):
 
         # Also check that the actual data directory has no entries!
         self.assertEqual(os.listdir(self.tempdir), [])
+
+    def test_indexingNonExistantFileFailes(self):
+        """
+        Attempting to upload a non existent file fails.
+        """
+        random_file_url = "/bla/blu/blub.resp"
+
+        self.assertRaises(InvalidParameterError, self._send_request, "POST",
+            "/event_based_data/station", None, {"index_file": random_file_url})
+
+    def test_attemptingToUploadAFolderFails(self):
+        """
+        Attempting to upload a folder fails.
+        """
+        self.assertRaises(InvalidParameterError, self._send_request, "POST",
+            "/event_based_data/station", None, {"index_file": self.data_dir})
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
