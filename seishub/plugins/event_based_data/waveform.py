@@ -146,19 +146,24 @@ class WaveformUploader(Component):
                     latitude = stats.sac.stla
                     longitude = stats.sac.stlo
                     elevation = stats.sac.stel
+                    local_depth = stats.sac.stdp
+                    # Treat local_depth seperately. If it is not given, assume
+                    # it is 0.
+                    if local_depth == -12345.0:
+                        local_depth = 0
                     # If any is invalid, assume all are.
                     if -12345.0 in [latitude, longitude, elevation] or \
                         None in [latitude, longitude, elevation]:
-                        latitude, longitude, elevation = None
+                        latitude, longitude, elevation, local_depth = None
                 else:
-                    latitude, longitude, elevation = None
+                    latitude, longitude, elevation, local_depth = None
 
                 # Add the channel if it does not already exists, or update the
                 # location or just return the existing station. In any case a
                 # channel column object will be returned.
                 channel_row = add_or_update_channel(session,
                     stats.network, stats.station, stats.location,
-                    stats.channel, latitude, longitude, elevation)
+                    stats.channel, latitude, longitude, elevation, local_depth)
 
                 # Add the current waveform channel as well.
                 waveform_channel = WaveformChannelObject(

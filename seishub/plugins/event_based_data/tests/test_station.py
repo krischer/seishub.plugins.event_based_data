@@ -62,6 +62,7 @@ class StationTestCase(EventBasedDataTestCase):
         self.assertEqual(station.latitude, None)
         self.assertEqual(station.longitude, None)
         self.assertEqual(station.elevation_in_m, None)
+        self.assertEqual(station.local_depth_in_m, None)
         # Assert the channel information.
         self.assertEqual(channel.location, "")
         self.assertEqual(channel.channel, "BHZ")
@@ -109,6 +110,7 @@ class StationTestCase(EventBasedDataTestCase):
         self.assertEqual(station.latitude, 48.845085)
         self.assertEqual(station.longitude, 13.701584)
         self.assertEqual(station.elevation_in_m, 1132.5)
+        self.assertEqual(station.local_depth_in_m, 0.0)
         # Assert the channel information. Location + station should be the same
         # for all.
         for channel in channels:
@@ -187,17 +189,17 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
         [{"network": "GR", "end_date": "", "format": "XSEED",
             "elevation": 1132.5, "longitude": 13.701584,
             "instrument": "STS2", "station": "GEC2", "location": "",
-            "latitude": 48.845085,
+            "latitude": 48.845085, "local_depth": 0,
             "start_date": UTCDateTime(2002, 8, 8, 12, 0), "channel": "HHE"},
         {"network": "GR", "end_date": "", "format": "XSEED",
             "elevation": 1132.5, "longitude": 13.701584,
             "instrument": "STS2", "station": "GEC2", "location": "",
-            "latitude": 48.845085,
+            "latitude": 48.845085, "local_depth": 0,
             "start_date": UTCDateTime(2002, 8, 8, 12, 0), "channel": "HHN"},
         {"network": "GR", "end_date": "", "format": "XSEED",
             "elevation": 1132.5, "longitude": 13.701584,
             "instrument": "STS2", "station": "GEC2", "location": "",
-            "latitude": 48.845085,
+            "latitude": 48.845085, "local_depth": 0,
             "start_date": UTCDateTime(2002, 8, 8, 12, 0), "channel": "HHZ"}])
 
     def test_readRESPFunction(self):
@@ -217,7 +219,7 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
             {"network": "PM", "station": "PFVI", "location": "",
                 "channel": "BHZ", "start_date": UTCDateTime(2007, 1, 1),
                 "end_date": None, "format": "RESP", "latitude": None,
-                "longitude": None, "elevation": None}])
+                "longitude": None, "elevation": None, "local_depth": None}])
 
     def test_multiple_identical_channels_in_RESP(self):
         """
@@ -238,8 +240,8 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
         self.assertEqual(channels[0], {"station": "TPAW", "longitude": None,
             "network": "IW", "end_date": UTCDateTime(2999, 12, 31, 23, 59, 59),
             "format": "RESP", "latitude": None, "elevation": None,
-            "start_date": UTCDateTime(2004, 7, 1, 0, 0), "channel": "BHE",
-            "location": ""})
+            "local_depth": None, "start_date": UTCDateTime(2004, 7, 1, 0, 0),
+            "channel": "BHE", "location": ""})
 
 
 def suite():

@@ -108,7 +108,7 @@ class StationInformationUploader(Component):
                     channel["network"], channel["station"],
                     channel["location"], channel["channel"],
                     channel["latitude"], channel["longitude"],
-                    channel["elevation"])
+                    channel["elevation"], channel["local_depth"])
 
                 # Now add information about the time span of the current
                 # channel information.
@@ -240,6 +240,7 @@ def _read_RESP(string_io):
                     "latitude": None,
                     "longitude": None,
                     "elevation": None,
+                    "local_depth": None,
                     "format": "RESP",
                     "start_date": current_startdate,
                     "end_date": current_enddate}
@@ -283,5 +284,6 @@ def _read_SEED(string_io):
         channel["latitude"] = location["latitude"]
         channel["longitude"] = location["longitude"]
         channel["elevation"] = location["elevation"]
+        channel["local_depth"] = location["local_depth"]
         channel["format"] = parser._format
     return channels

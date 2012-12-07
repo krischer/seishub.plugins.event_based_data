@@ -82,6 +82,7 @@ class WaveformTestCase(EventBasedDataTestCase):
         self.assertAlmostEqual(station.latitude, 37.132832, 5)
         self.assertAlmostEqual(station.longitude, -8.826829, 5)
         self.assertAlmostEqual(station.elevation_in_m, 189.0, 5)
+        self.assertAlmostEqual(station.local_depth_in_m, 3.0, 5)
         # Assert the channel information.
         self.assertEqual(channel.location, "")
         self.assertEqual(channel.channel, "BHE")
