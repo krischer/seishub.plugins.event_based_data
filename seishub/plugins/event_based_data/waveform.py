@@ -31,7 +31,7 @@ class WaveformUploader(Component):
     SEISHUB_SERVER/event_based_data/waveform?event=EVENT_NAME
 
     By default the data will be assumed to be real data. Passing
-    is_synthetic=true to the URL will make it a synthetic waveform.
+    synthetic=true to the URL will make it a synthetic waveform.
 
     Waveforms will be stored in the path specified in the config file at:
         [event_based_data] waveform_filepath
@@ -66,7 +66,7 @@ class WaveformUploader(Component):
         """
         # Parse the given parameters.
         event_id = request.args0.get("event", None)
-        is_synthetic = request.args0.get("is_synthetic", None)
+        is_synthetic = request.args0.get("synthetic", None)
         if isinstance(is_synthetic, basestring) and \
             is_synthetic.lower() in lowercase_true_strings:
             is_synthetic = True
@@ -105,9 +105,6 @@ class WaveformUploader(Component):
         try:
             st = read(request.content)
         except:
-            raise InvalidObjectError(msg)
-        # Also raise if it does not contain any waveform data.
-        if len(st) == 0:
             raise InvalidObjectError(msg)
 
         # Replace network, station and channel codes with placeholders if they

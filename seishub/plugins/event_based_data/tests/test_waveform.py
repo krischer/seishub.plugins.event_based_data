@@ -10,10 +10,11 @@ A test suite for waveform uploading.
     (http://www.gnu.org/copyleft/lesser.html)
 """
 import datetime
+from obspy.core import Stream
 import os
 import unittest
 
-from seishub.core.exceptions import InvalidParameterError
+from seishub.core.exceptions import InvalidParameterError, InvalidObjectError
 
 from seishub.plugins.event_based_data.tests.test_case import \
     EventBasedDataTestCase
@@ -99,6 +100,36 @@ class WaveformTestCase(EventBasedDataTestCase):
         # Check the relationships.
         self.assertTrue(waveform.filepath is filepath_object)
         self.assertTrue(waveform.channel is channel)
+
+    def test_settingSyntheticsFlagMarksFileAsSynthetic(self):
+        """
+        Simple test that checks that a file uploaded with synthetic=true marks
+        the file as a synthetic file.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        # Set synthetic to true.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "synthetic": "true"})
+        session = self.env.db.session(bind=self.env.db.engine)
+        waveform = session.query(WaveformChannelObject).one()
+        self.assertEqual(waveform.is_synthetic, True)
+
+    def test_uploadingNonWaveformFileRaises(self):
+        """
+        Uploading a non-waveform file should raise an InvalidObjectError.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        # Event file is not a waveform file.
+        event_file = os.path.join(self.data_dir, "example_event.xml")
+        self.assertRaises(InvalidObjectError, self._send_request, "POST",
+            "/event_based_data/waveform", event_file,
+            {"event": "example_event"})
 
 
 def suite():
