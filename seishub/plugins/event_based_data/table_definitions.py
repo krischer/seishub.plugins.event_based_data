@@ -53,7 +53,7 @@ class StationObject(Base):
     latitude = Column(Float, nullable=True, index=True)
     longitude = Column(Float, nullable=True, index=True)
     elevation_in_m = Column(Float, nullable=True, index=True)
-    burial_in_m = Column(Float, nullable=True, index=True)
+    local_depth_in_m = Column(Float, nullable=True, index=True)
 
 
 class FilepathObject(Base):
