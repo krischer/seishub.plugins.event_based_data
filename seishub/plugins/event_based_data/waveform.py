@@ -8,6 +8,7 @@ from seishub.core.packages.interfaces import IMapper
 from obspy.core import read
 import os
 from sqlalchemy import Table
+import StringIO
 
 from table_definitions import WaveformChannelObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
@@ -44,6 +45,27 @@ class WaveformUploader(Component):
 
     If necessary, a ".1", ".2", ... will be appended to the filename if many
     files close to one another in time are stored.
+
+
+    It is also possible to not upload the data but just tell SeisHub where it
+    can be found in the form of a file url. The file url needs to be accessible
+    from the SeisHub server - it is usually a good idea to use absolute
+    filepaths.. This is useful if you want to leave the files where they are
+    right now and just index them inside the database.
+
+    SEISHUB_SERVER/event_based_data/waveform?event=EVENT_NAME&index_file=FILE
+
+    Take care of correctly encoding the URL, e.g. "/" is encoded as "%2F".
+
+    You can use urllib.urlencode() for that task:
+
+    >>> import urllib
+    >>> base_url = "SEISHUB_SERVER/event_based_data/waveform"
+    >>> filepath = "/example/data/example_file.mseed"
+    >>> params = {"event": "EVENT_NAME", "index_file", filepath}
+    >>> url = base_url + "?" + urllib.urlencode(params)
+    >>> print url
+    ...?event=EVENT_NAME&index_file=%2Fexample%2Fdata%2Fexample_file.mseed
     """
     implements(IMapper)
 
@@ -90,20 +112,39 @@ class WaveformUploader(Component):
             msg += "is not known to SeisHub."
             raise InvalidParameterError(msg)
 
-        request.content.seek(0, 0)
-        data = request.content.read()
+        # There are two possibilities for getting data inside the database:
+        # upload the file directly to SeisHub or just give a file URL that the
+        # server can find.
+        filename = request.args0.get("index_file", None)
+        # If the 'index_file' parameter is not given, assume the file will be
+        # directly uploaded.
+        if filename is None:
+            waveform_data = request.content
+            waveform_data.seek(0, 0)
+            file_is_managed_by_seishub = True
+        else:
+            filename = os.path.abspath(filename)
+            if not os.path.exists(filename) or \
+                not os.path.isfile(filename):
+                msg = "File '%s' cannot be found by the SeisHub server."
+                raise InvalidParameterError(msg)
+            with open(filename, "rb") as open_file:
+                waveform_data = StringIO.StringIO(open_file.read())
+            waveform_data.seek(0, 0)
+            file_is_managed_by_seishub = False
 
         # Check if file exists. Checksum is returned otherwise. Raises on
         # failure.
+        data = waveform_data.read()
+        waveform_data.seek(0, 0)
         md5_hash = check_if_file_exist_in_db(data, self.env)
-        request.content.seek(0, 0)
 
-        msg = ("The attached content does not appear to be a valid waveform "
-               "file. Only data readable by ObsPy is acceptable.")
+        msg = ("The data does not appear to be a valid waveform file. Only "
+               "data readable by ObsPy is acceptable.")
         # Only valid waveforms files will be stored in the database. Valid is
         # defined by being readable by ObsPy.
         try:
-            st = read(request.content)
+            st = read(waveform_data)
         except:
             raise InvalidObjectError(msg)
 
@@ -114,18 +155,20 @@ class WaveformUploader(Component):
         location = st[0].stats.location
         channel = st[0].stats.channel if st[0].stats.channel else "XX"
 
-        # Otherwise create the filename for the file, and check if it exists.
-        filename = os.path.join(self.env.config.get("event_based_data",
-            "waveform_filepath"), network, station,
-            ("{network}.{station}.{location}.{channel}-"
-            "{year}_{month}_{day}_{hour}"))
-        t = st[0].stats.starttime
-        filename = filename.format(network=network, station=station,
-            channel=channel, location=location, year=t.year, month=t.month,
-            day=t.day, hour=t.hour)
+        if file_is_managed_by_seishub is True:
+            # Otherwise create the filename for the file, and check if it
+            # exists.
+            filename = os.path.join(self.env.config.get("event_based_data",
+                "waveform_filepath"), network, station,
+                ("{network}.{station}.{location}.{channel}-"
+                "{year}_{month}_{day}_{hour}"))
+            t = st[0].stats.starttime
+            filename = filename.format(network=network, station=station,
+                channel=channel, location=location, year=t.year, month=t.month,
+                day=t.day, hour=t.hour)
 
-        # Write the data to the filesystem. The final filename is returned.
-        filename = write_string_to_filesystem(filename, data)
+            # Write the data to the filesystem. The final filename is returned.
+            filename = write_string_to_filesystem(filename, data)
 
         # Use only one session to be able to take advantage of transactions.
         session = self.env.db.session(bind=self.env.db.engine)
@@ -134,7 +177,7 @@ class WaveformUploader(Component):
         try:
             # Add information about the uploaded file into the database.
             filepath = add_filepath_to_database(session, filename, len(data),
-                    md5_hash, is_managed_by_seishub=True)
+                    md5_hash, is_managed_by_seishub=file_is_managed_by_seishub)
 
             # Loop over all traces in the file.
             for trace in st:
@@ -182,7 +225,8 @@ class WaveformUploader(Component):
             session.close()
 
             # Remove the file if something failes..
-            os.remove(filename)
+            if file_is_managed_by_seishub:
+                os.remove(filename)
             msg = e.message + " - Rolling back all changes."
             raise InternalServerError(msg)
         session.close()
