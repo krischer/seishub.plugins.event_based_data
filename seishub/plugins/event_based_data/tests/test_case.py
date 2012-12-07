@@ -15,6 +15,7 @@ import os
 import shutil
 import StringIO
 import tempfile
+import urllib
 
 from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, GET, POST, PUT, DELETE
@@ -113,3 +114,16 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         event_file = os.path.join(self.data_dir, "example_event.xml")
         self._send_request("POST", "/xml/event_based_data/event/example_event",
             event_file)
+
+    def _encode_url(self, base_url, params):
+        """
+        Helper method to encode a url. Usage:
+
+        >>> base_url = "/event_based_data/waveform"
+        >>> filepath = "/example/data/example_file.mseed"
+        >>> params = {"event": "EVENT_NAME", "index_file", filepath}
+        >>> test = EventBasedDataTestCase()
+        >>> print test._encode_url(base_url, params)
+        ...?event=EVENT_NAME&index_file=%2Fexample%2Fdata%2Fexample_file.mseed
+        """
+        return "%s?%s" % (base_url, urllib.urlencode(params))
