@@ -53,6 +53,7 @@ class StationObject(Base):
     latitude = Column(Float, nullable=True, index=True)
     longitude = Column(Float, nullable=True, index=True)
     elevation_in_m = Column(Float, nullable=True, index=True)
+    burial_in_m = Column(Float, nullable=True, index=True)
 
 
 class FilepathObject(Base):
@@ -70,6 +71,8 @@ class FilepathObject(Base):
     # is managed by SeisHub, SeisHub has the right to move, rename, and delete
     # the file. Otherwise it will never touch the file.
     is_managed_by_seishub = Column(Boolean, nullable=False)
+    # An XML file containing information about the origin of the file.
+    file_origin_resource_id = Column(Integer, nullable=True)
 
 
 class ChannelMetadataObject(Base):
@@ -116,6 +119,8 @@ class WaveformChannelObject(Base):
     is_synthetic = Column(Boolean, nullable=False)
     # The metadata can be any XML document stored in the database.
     metadata_resource_id = Column(Integer, nullable=True)
+    # Information about previous processing of the channel.
+    processing_history_resource_id = Column(Integer, nullable=True)
 
     # Add relationsships to enable two way bindings.
     channel = relationship("ChannelObject",
