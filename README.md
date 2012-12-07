@@ -52,3 +52,13 @@ to be bound to an already existing event
 
 #### Get a list of all waveform for a given event
 `GET BASE/event_based_data/waveform?event=EVENT_NAME`
+
+#### Index (not upload) a new waveform file:
+
+It is oftentimes desirable to just index data and not let it be managed by
+SeisHub. Passing an absolute file path (that the server can see) to the
+`index_file` parameter results results in the file being indexed and entered
+into the database while the actual file stays where it is. In this case the
+file is not managed by SeisHub, just indexed.
+
+`POST BASE/event_based_data/waveform?event=EVENT_NAME&index_file=%2Ffile%2Fpath`
