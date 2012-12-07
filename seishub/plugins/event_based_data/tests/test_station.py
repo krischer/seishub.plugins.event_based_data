@@ -49,6 +49,8 @@ class StationTestCase(EventBasedDataTestCase):
         self.assertEqual(data, actually_stored_file)
         # The filepath in this case is also managed by SeisHub.
         self.assertEqual(filepath_object.is_managed_by_seishub, True)
+        # has no associated origin file.
+        self.assertEqual(filepath_object.file_origin_resource_id, None)
 
         # Now check the databases. Should contain exactly one entry in the
         # station table, one in the channels table and one in the metadata
@@ -97,6 +99,8 @@ class StationTestCase(EventBasedDataTestCase):
         self.assertEqual(data, actually_stored_file)
         # The filepath in this case is also managed by SeisHub.
         self.assertEqual(filepath_object.is_managed_by_seishub, True)
+        # has no associated origin file.
+        self.assertEqual(filepath_object.file_origin_resource_id, None)
 
         # Now check the databases. Should contain exactly one entry in the
         # station table, three in the channels table and three in the metadata

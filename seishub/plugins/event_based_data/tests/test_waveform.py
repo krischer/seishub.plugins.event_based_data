@@ -69,6 +69,8 @@ class WaveformTestCase(EventBasedDataTestCase):
         self.assertEqual(data, actually_stored_file)
         # The filepath in this case is also managed by SeisHub.
         self.assertEqual(filepath_object.is_managed_by_seishub, True)
+        # has no associated origin file.
+        self.assertEqual(filepath_object.file_origin_resource_id, None)
 
         # Now check the databases. Should contain exactly one entry in the
         # station table, one in the channels table and one in the metadata
@@ -97,7 +99,9 @@ class WaveformTestCase(EventBasedDataTestCase):
         self.assertAlmostEqual(waveform.sampling_rate, 20.0)
         self.assertEqual(waveform.format, "SAC")
         self.assertEqual(waveform.is_synthetic, False)
+        # Currently has no associate metadata and processing information
         self.assertEqual(waveform.metadata_resource_id, None)
+        self.assertEqual(waveform.processing_history_resource_id, None)
         # Check the relationships.
         self.assertTrue(waveform.filepath is filepath_object)
         self.assertTrue(waveform.channel is channel)
