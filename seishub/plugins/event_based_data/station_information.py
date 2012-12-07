@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 from seishub.core.core import Component, implements
 from seishub.core.exceptions import NotFoundError, InvalidObjectError, \
-    InternalServerError
+    InternalServerError, InvalidParameterError
 from seishub.core.packages.interfaces import IMapper
 
 from obspy.core import UTCDateTime
 from obspy.xseed import Parser
 import os
 from sqlalchemy.exc import IntegrityError
+import StringIO
 
 from table_definitions import ChannelMetadataObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
@@ -38,6 +39,26 @@ class StationInformationUploader(Component):
 
     If necessary, a ".1", ".2", ... will be appended to the filename if many
     files close to one another in time are stored.
+
+    It is also possible to not upload the data but just tell SeisHub where it
+    can be found in the form of a file url. The file url needs to be accessible
+    from the SeisHub server - it is usually a good idea to use absolute
+    filepaths.. This is useful if you want to leave the files where they are
+    right now and just index them inside the database.
+
+    SEISHUB_SERVER/event_based_data/station?index_file=FILE
+
+    Take care of correctly encoding the URL, e.g. "/" is encoded as "%2F".
+
+    You can use urllib.urlencode() for that task:
+
+    >>> import urllib
+    >>> base_url = "SEISHUB_SERVER/event_based_data/station"
+    >>> filepath = "/example/data/example_file.seed"
+    >>> params = {index_file", filepath}
+    >>> url = base_url + "?" + urllib.urlencode(params)
+    >>> print url
+    SEISHUB_SERVER/...station?index_file=%2Fexample%2Fdata%2Fexample_file.mseed
     """
     implements(IMapper)
 
@@ -58,38 +79,62 @@ class StationInformationUploader(Component):
         Function that will be called upon receiving a POST request for the
         aforementioned URL.
         """
-        request.content.seek(0, 0)
-        data = request.content.read()
+        # There are two possibilities for getting data inside the database:
+        # upload the file directly to SeisHub or just give a file URL that the
+        # server can find.
+        filename = request.args0.get("index_file", None)
+        # If the 'index_file' parameter is not given, assume the file will be
+        # directly uploaded.
+        if filename is None:
+            station_data = request.content
+            station_data.seek(0, 0)
+            file_is_managed_by_seishub = True
+        else:
+            filename = os.path.abspath(filename)
+            if not os.path.exists(filename) or \
+                not os.path.isfile(filename):
+                msg = "File '%s' cannot be found by the SeisHub server." % \
+                    filename
+                raise InvalidParameterError(msg)
+            with open(filename, "rb") as open_file:
+                station_data = StringIO.StringIO(open_file.read())
+            station_data.seek(0, 0)
+            file_is_managed_by_seishub = False
+
         # Check if file exists. Checksum is returned otherwise. Raises on
         # failure.
+        data = station_data.read()
+        station_data.seek(0, 0)
         md5_hash = check_if_file_exist_in_db(data, self.env)
 
         # Attempt to read as a SEED/XSEED file.
-        request.content.seek(0, 0)
-        channels = _read_SEED(data)
-        request.content.seek(0, 0)
+        station_data.seek(0, 0)
+        channels = _read_SEED(station_data)
+        station_data.seek(0, 0)
         # Otherwise attempt to read as a RESP file.
         if channels is False:
-            channels = _read_RESP(request.content)
+            channels = _read_RESP(station_data)
         # Otherwise raise an Error.
         if channels is False:
             msg = "Could not read the station information file."
             raise InvalidObjectError(msg)
 
-        network = channels[0]["network"]
+        if file_is_managed_by_seishub is True:
+            network = channels[0]["network"]
 
-        filename = os.path.join(self.env.config.get("event_based_data",
-            "station_filepath"), network,
-            ("{network}.{station}.{location}.{channel}-"
-            "{year}_{month}"))
-        filename = filename.format(network=network,
-            station=channels[0]["station"], location=channels[0]["location"],
-            channel=channels[0]["channel"],
-            year=channels[0]["start_date"].year,
-            month=channels[0]["start_date"].month)
+            filename = os.path.join(self.env.config.get("event_based_data",
+                "station_filepath"), network,
+                ("{network}.{station}.{location}.{channel}-"
+                "{year}_{month}"))
+            filename = filename.format(network=network,
+                station=channels[0]["station"],
+                location=channels[0]["location"],
+                channel=channels[0]["channel"],
+                year=channels[0]["start_date"].year,
+                month=channels[0]["start_date"].month)
 
-        # Write the data to the filesystem. The final filename is returned.
-        filename = write_string_to_filesystem(filename, data)
+            # Write the data to the filesystem. The final filename is returned.
+            filename = write_string_to_filesystem(filename, data)
 
         # Use only one session to be able to take advantage of transactions.
         session = self.env.db.session(bind=self.env.db.engine)
@@ -98,7 +143,7 @@ class StationInformationUploader(Component):
         try:
             # Add information about the uploaded file into the database.
             filepath = add_filepath_to_database(session, filename, len(data),
-                md5_hash, is_managed_by_seishub=True)
+                md5_hash, is_managed_by_seishub=file_is_managed_by_seishub)
             # Loop over all channels.
             for channel in channels:
                 # Add the channel if it does not already exists, or update the
@@ -148,7 +193,8 @@ class StationInformationUploader(Component):
                 msg += ("All information contained in this file will not be "
                     "added to the database.")
             # Remove the file if something failed.
-            os.remove(filename)
+            if file_is_managed_by_seishub is True:
+                os.remove(filename)
             self.env.log.error(msg)
             raise InternalServerError(msg)
         session.close()
