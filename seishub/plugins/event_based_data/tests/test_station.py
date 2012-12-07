@@ -79,6 +79,10 @@ class StationTestCase(EventBasedDataTestCase):
         self.assertTrue(metadata.filepath is filepath_object)
         self.assertTrue(metadata.channel is channel)
 
+        # Also check that it has been uploaded to the correct directory.
+        self.assertEqual(os.listdir(os.path.join(self.tempdir, "station_data",
+            "PM")), ["PM.PFVI..BHZ-2007_1"])
+
     def test_XSEEDFileUploading(self):
         """
         Tests the uploading via POST of a XSEED RESP file. This is a rather
@@ -165,6 +169,61 @@ class StationTestCase(EventBasedDataTestCase):
         # Once more should fail. Also code 409 but a different error.
         self.assertRaises(DuplicateObjectError, self._send_request, "POST",
             "/event_based_data/station", xseed_file)
+
+    def test_RESPFileIndexing(self):
+        """
+        Index a station file. Most things should be exactly the same as for
+        the normal upload case. Only the file should of course not be copied.
+
+        This test is almost identical to test_RESPFileUploading().
+        """
+        resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
+        self._send_request("POST", "/event_based_data/station", None,
+            {"index_file": resp_file})
+
+        # Get the filepath object. Database should only contain one!
+        session = self.env.db.session(bind=self.env.db.engine)
+        filepath_object = session.query(FilepathObject).one()
+
+        # The filepath in this case is not managed by SeisHub.
+        self.assertEqual(filepath_object.is_managed_by_seishub, False)
+        # has no associated origin file.
+        self.assertEqual(filepath_object.file_origin_resource_id, None)
+        # The filepath should be identical to the actual file in this case.
+        self.assertEqual(filepath_object.filepath,
+            os.path.abspath(resp_file))
+        # The size should be identical to the stored size.
+        self.assertEqual(filepath_object.size, os.path.getsize(resp_file))
+
+        # Now check the databases. Should contain exactly one entry in the
+        # station table, one in the channels table and one in the metadata
+        # table.
+        station = session.query(StationObject).one()
+        channel = session.query(ChannelObject).one()
+        # Assert the station information
+        self.assertEqual(station.network, "PM")
+        self.assertEqual(station.station, "PFVI")
+        # RESP files do not contain coordinates.
+        self.assertEqual(station.latitude, None)
+        self.assertEqual(station.longitude, None)
+        self.assertEqual(station.elevation_in_m, None)
+        self.assertEqual(station.local_depth_in_m, None)
+        # Assert the channel information.
+        self.assertEqual(channel.location, "")
+        self.assertEqual(channel.channel, "BHZ")
+        self.assertTrue(channel.station is station)
+
+        # Check the channel_metadata
+        metadata = session.query(ChannelMetadataObject).one()
+        self.assertEqual(metadata.starttime, datetime.datetime(2007, 1, 1))
+        self.assertEqual(metadata.endtime, None)
+        self.assertEqual(metadata.format, "RESP")
+        # Check the relationships.
+        self.assertTrue(metadata.filepath is filepath_object)
+        self.assertTrue(metadata.channel is channel)
+
+        # Also check that the actual data directory has no entries!
+        self.assertEqual(os.listdir(self.tempdir), [])
 
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
