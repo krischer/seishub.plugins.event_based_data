@@ -15,7 +15,6 @@ import os
 import shutil
 import StringIO
 import tempfile
-import urllib
 
 from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, GET, POST, PUT, DELETE

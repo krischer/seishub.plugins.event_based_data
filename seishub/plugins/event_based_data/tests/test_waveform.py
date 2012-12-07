@@ -152,6 +152,30 @@ class WaveformTestCase(EventBasedDataTestCase):
             "/event_based_data/waveform", event_file,
             {"event": "example_event"})
 
+    def test_indexingNonExistantFileFailes(self):
+        """
+        Attempting to upload a non existent file fails.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        random_file_url = "/bla/blu/blub.mseed"
+
+        self.assertRaises(InvalidParameterError, self._send_request, "POST",
+            "/event_based_data/waveform", None,
+            {"event": "example_event", "index_file": random_file_url})
+
+    def test_attemptingToUploadAFolderFails(self):
+        """
+        Attempting to upload a folder fails.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        self.assertRaises(InvalidParameterError, self._send_request, "POST",
+            "/event_based_data/waveform", None,
+            {"event": "example_event", "index_file": self.data_dir})
+
 
 def suite():
     suite = unittest.TestSuite()

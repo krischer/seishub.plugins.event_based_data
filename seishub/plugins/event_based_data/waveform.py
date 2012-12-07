@@ -126,7 +126,8 @@ class WaveformUploader(Component):
             filename = os.path.abspath(filename)
             if not os.path.exists(filename) or \
                 not os.path.isfile(filename):
-                msg = "File '%s' cannot be found by the SeisHub server."
+                msg = "File '%s' cannot be found by the SeisHub server." % \
+                    filename
                 raise InvalidParameterError(msg)
             with open(filename, "rb") as open_file:
                 waveform_data = StringIO.StringIO(open_file.read())
