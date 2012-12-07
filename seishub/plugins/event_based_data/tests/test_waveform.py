@@ -10,7 +10,6 @@ A test suite for waveform uploading.
     (http://www.gnu.org/copyleft/lesser.html)
 """
 import datetime
-from obspy.core import Stream
 import os
 import unittest
 
@@ -122,6 +121,23 @@ class WaveformTestCase(EventBasedDataTestCase):
         session = self.env.db.session(bind=self.env.db.engine)
         waveform = session.query(WaveformChannelObject).one()
         self.assertEqual(waveform.is_synthetic, True)
+
+    def test_settingSyntheticsFlagToFalseMarksFileAsNotSynthetic(self):
+        """
+        Simple test that checks that a file uploaded with synthetic=false marks
+        the file as a non-synthetic file.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        # Set synthetic to true.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "synthetic": "false"})
+        session = self.env.db.session(bind=self.env.db.engine)
+        waveform = session.query(WaveformChannelObject).one()
+        self.assertEqual(waveform.is_synthetic, False)
 
     def test_uploadingNonWaveformFileRaises(self):
         """
