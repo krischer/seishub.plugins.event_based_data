@@ -26,6 +26,7 @@ setup(
     install_requires=[
         "setuptools",
         "seishub.core",
+        "pil"
     ],
     # You need to define entry points so that SeisHub can find the plugin.
     # Usually something like this is fine.
