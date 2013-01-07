@@ -64,14 +64,37 @@ class EventResourceType(Component):
 
     # Register some indices so the events can easily be searched.
     registerIndex("time", "/{http://quakeml.org/xmlns/quakeml/1.2}"
-            "quakeml/eventParameters/event/origin/time/value", "datetime")
+        "quakeml/eventParameters/event/origin/time/value", "datetime")
     registerIndex("latitude", "/{http://quakeml.org/xmlns/quakeml/1.2}"
-            "quakeml/eventParameters/event/origin/latitude/value", "float")
+        "quakeml/eventParameters/event/origin/latitude/value", "float")
     registerIndex("longitude", "/{http://quakeml.org/xmlns/quakeml/1.2}"
-            "quakeml/eventParameters/event/origin/longitude/value", "float")
+        "quakeml/eventParameters/event/origin/longitude/value", "float")
     registerIndex("depth", "/{http://quakeml.org/xmlns/quakeml/1.2}"
-            "quakeml/eventParameters/event/origin/depth/value", "float")
+        "quakeml/eventParameters/event/origin/depth/value", "float")
     registerIndex("magnitude", "/{http://quakeml.org/xmlns/quakeml/1.2}"
-            "quakeml/eventParameters/event/magnitude/mag/value", "float")
+        "quakeml/eventParameters/event/magnitude/mag/value", "float")
     registerIndex("magnitude_type", "/{http://quakeml.org/xmlns/quakeml/1.2}"
-            "quakeml/eventParameters/event/magnitude/type", "text")
+        "quakeml/eventParameters/event/magnitude/type", "text")
+
+    # Moment tensor indices.
+    registerIndex("scalar_moment", "/{http://quakeml.org/xmlns/quakeml/1.2}"
+        "quakeml/eventParameters/event/focalMechanism/momentTensor/"
+        "scalarMoment/value", "float")
+    registerIndex("Mrr", "/{http://quakeml.org/xmlns/quakeml/1.2}"
+        "quakeml/eventParameters/event/focalMechanism/momentTensor/"
+        "tensor/Mrr/value", "float")
+    registerIndex("Mpp", "/{http://quakeml.org/xmlns/quakeml/1.2}"
+        "quakeml/eventParameters/event/focalMechanism/momentTensor/"
+        "tensor/Mpp/value", "float")
+    registerIndex("Mtt", "/{http://quakeml.org/xmlns/quakeml/1.2}"
+        "quakeml/eventParameters/event/focalMechanism/momentTensor/"
+        "tensor/Mtt/value", "float")
+    registerIndex("Mrt", "/{http://quakeml.org/xmlns/quakeml/1.2}"
+        "quakeml/eventParameters/event/focalMechanism/momentTensor/"
+        "tensor/Mrt/value", "float")
+    registerIndex("Mrp", "/{http://quakeml.org/xmlns/quakeml/1.2}"
+        "quakeml/eventParameters/event/focalMechanism/momentTensor/"
+        "tensor/Mrp/value", "float")
+    registerIndex("Mtp", "/{http://quakeml.org/xmlns/quakeml/1.2}"
+        "quakeml/eventParameters/event/focalMechanism/momentTensor/"
+        "tensor/Mtp/value", "float")
