@@ -102,7 +102,7 @@ class BeachBallMapper(Component):
         # Eventually resize it as the Beachball plotting method has
         # singularities for small image sizes.
         real_width = width if width >= 100 else 100
-        data = StringIO(Beachball(result.values(), format="png",
+        data = StringIO(Beachball(result.values(), linewidth=3.5, format="png",
             width=real_width, facecolor=facecolor))
         if width < real_width:
             im = Image.open(data).resize((width, width), Image.ANTIALIAS)
