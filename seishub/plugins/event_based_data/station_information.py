@@ -4,6 +4,7 @@ from seishub.core.core import Component, implements
 from seishub.core.exceptions import NotFoundError, InvalidObjectError, \
     InternalServerError, InvalidParameterError
 from seishub.core.packages.interfaces import IMapper
+from seishub.core.db.util import formatResults
 
 from obspy.core import UTCDateTime
 from obspy.xseed import Parser
@@ -11,9 +12,43 @@ import os
 from sqlalchemy.exc import IntegrityError
 import StringIO
 
-from table_definitions import ChannelMetadataObject
+from table_definitions import ChannelMetadataObject, StationObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
     add_or_update_channel, add_filepath_to_database
+
+
+class StationListMapper(Component):
+    """
+    Generates a list of available seismic stations.
+    """
+    implements(IMapper)
+
+    package_id = "event_based_data"
+    version = "0.0.0."
+    mapping_url = "/event_based_data/stations/getList"
+
+    def process_GET(self, request):
+        """
+        Function that will be called upon receiving a GET request for the
+        aforementioned URL.
+        """
+        # XXX: This is likely not optimal.
+        session = self.env.db.session(bind=self.env.db.engine)
+        query = session.query(StationObject).order_by(StationObject.network)\
+            .order_by(StationObject.station).all()
+        query = [{
+            "id": i.id,
+            "network": i.network,
+            "station": i.station,
+            "latitude": i.latitude,
+            "longitude": i.longitude,
+            "elevation_in_m": i.elevation_in_m,
+            "local_dept_in_m": i.local_depth_in_m,
+            "channels": [{"channel": j.channel}
+                for j in i.channel]} for i in query]
+
+        result = formatResults(request, query)
+        return result
 
 
 class StationInformationUploader(Component):
