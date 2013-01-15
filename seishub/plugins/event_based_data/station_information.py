@@ -6,6 +6,7 @@ from seishub.core.exceptions import NotFoundError, InvalidObjectError, \
 from seishub.core.packages.interfaces import IMapper
 from seishub.core.db.util import formatResults
 
+import json
 from obspy.core import UTCDateTime
 from obspy.xseed import Parser
 import os
@@ -31,6 +32,9 @@ class StationListMapper(Component):
         """
         Function that will be called upon receiving a GET request for the
         aforementioned URL.
+
+        The 'format' argument supports xml, xhtml, json, and geojson and will
+        output the appropriate type.
         """
         # XXX: This is likely not optimal.
         session = self.env.db.session(bind=self.env.db.engine)
@@ -43,11 +47,32 @@ class StationListMapper(Component):
             "latitude": i.latitude,
             "longitude": i.longitude,
             "elevation_in_m": i.elevation_in_m,
-            "local_dept_in_m": i.local_depth_in_m,
+            "local_depth_in_m": i.local_depth_in_m,
             "channels": [{"channel": j.channel}
                 for j in i.channel]} for i in query]
 
-        result = formatResults(request, query)
+        # Encode geojson manually, let the rest be handled by a convenience
+        # method.
+        formats = request.args.get("format", [])
+        if "geojson" in formats:
+            result = {"type": "FeatureCollection",
+                "features": []}
+            for item in query:
+                feature = {"type": "Feature",
+                    "geometry": {"type": "Point",
+                        "coordinates": [item["longitude"], item["latitude"]]},
+                    "properties": {
+                        "elevation_in_m": item["elevation_in_m"],
+                        "local_depth_in_m": item["local_depth_in_m"],
+                        "channels": ", ".join([_i["channel"]
+                            for _i in item["channels"]])},
+                    "id": "%s.%s" % (item["network"], item["station"])}
+                result["features"].append(feature)
+            result = json.dumps(result)
+            request.setHeader('content-type',
+                'application/json; charset=UTF-8')
+        else:
+            result = formatResults(request, query)
         return result
 
 
