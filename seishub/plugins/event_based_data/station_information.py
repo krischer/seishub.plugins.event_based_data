@@ -429,7 +429,9 @@ class StationDetailMapper(Component):
             raise NotFoundError(msg)
         result = {
             "network_code": query.network,
+            "network_name": "",
             "station_code": query.station,
+            "station_name": "",
             "latitude": query.latitude,
             "longitude": query.longitude,
             "elevation_in_m": query.elevation_in_m,
@@ -438,13 +440,40 @@ class StationDetailMapper(Component):
         # Also parse information about all channels.
         for channel in query.channel:
             md = channel.channel_metadata[0]
+
             info = {
                 "channel_code": channel.channel,
                 "location_code": channel.location,
-                "starttime": md.starttime,
-                "endtime": md.starttime,
+                "start_date": str(md.starttime),
+                "end_date": str(md.starttime),
+                "instrument": "",
                 "format": md.format,
                 "channel_filepath_id": md.filepath_id}
+
+            # Attempt to get long descriptions for the station and network
+            # codes. This is only possible for SEED and XSEED files.
+            if info["format"].lower() in ["seed", "xseed"]:
+                parser = Parser(md.filepath.filepath)
+                inv = parser.getInventory()
+                if not result["network_name"] and inv["networks"]:
+                    for network in inv["networks"]:
+                        if network["network_code"] != result["network_code"]:
+                            continue
+                        result["network_name"] = network["network_name"]
+                        break
+                if not result["station_name"] and inv["stations"]:
+                    for station in inv["stations"]:
+                        station_code = station["station_id"].split(".")[1]
+                        if station_code != result["station_code"]:
+                            continue
+                        result["station_name"] = station["station_name"]
+                for channel in inv["channels"]:
+                    location_code, channel_code = \
+                        channel["channel_id"].split(".")[2:]
+                    if location_code == info["location_code"] and \
+                        channel_code == info["channel_code"]:
+                        info["start_date"] = str(channel["start_date"])
+                        info["end_date"] = str(channel["end_date"])
+                        info["instrument"] = channel["instrument"]
             result["channels"].append({"channel": info})
-        print result
         return formatResults(request, [result])
