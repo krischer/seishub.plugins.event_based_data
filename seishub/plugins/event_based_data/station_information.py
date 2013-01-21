@@ -447,6 +447,7 @@ class StationDetailMapper(Component):
                 "start_date": str(md.starttime),
                 "end_date": str(md.starttime),
                 "instrument": "",
+                "sampling_rate": "",
                 "format": md.format,
                 "channel_filepath_id": md.filepath_id}
 
@@ -475,5 +476,6 @@ class StationDetailMapper(Component):
                         info["start_date"] = str(channel["start_date"])
                         info["end_date"] = str(channel["end_date"])
                         info["instrument"] = channel["instrument"]
+                        info["sampling_rate"] = channel["sampling_rate"]
             result["channels"].append({"channel": info})
         return formatResults(request, [result])
