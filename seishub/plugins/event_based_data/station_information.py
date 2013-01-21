@@ -418,7 +418,7 @@ class StationDetailMapper(Component):
         station = request.args.get("station", [])[0]
         if not station or not network:
             msg = "station and network parameters are required."
-            raise InvalidObjectError(msg)
+            raise InvalidParameterError(msg)
         session = self.env.db.session(bind=self.env.db.engine)
         query = session.query(StationObject)\
             .filter(StationObject.network == network)\
