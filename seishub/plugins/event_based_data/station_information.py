@@ -63,6 +63,10 @@ class StationListMapper(Component):
                         "coordinates": [item["longitude"], item["latitude"]]},
                     "properties": {
                         "elevation_in_m": item["elevation_in_m"],
+                        "latitude": item["latitude"],
+                        "longitude": item["longitude"],
+                        "network": item["network"],
+                        "station": item["station"],
                         "local_depth_in_m": item["local_depth_in_m"],
                         "channels": ", ".join([_i["channel"]
                             for _i in item["channels"]])},
@@ -393,3 +397,54 @@ def _read_SEED(string_io):
         channel["local_depth"] = location["local_depth"]
         channel["format"] = parser._format
     return channels
+
+
+class StationDetailMapper(Component):
+    """
+    Get detailed information about a station. This operations opens multiple
+    files and this is potentially slow.
+
+    Necessary parameters:
+        network, station
+    """
+    implements(IMapper)
+
+    package_id = "event_based_data"
+    version = "0.0.0."
+    mapping_url = "/event_based_data/stations/getDetails"
+
+    def process_GET(self, request):
+        network = request.args.get("network", [])[0]
+        station = request.args.get("station", [])[0]
+        if not station or not network:
+            msg = "station and network parameters are required."
+            raise InvalidObjectError(msg)
+        session = self.env.db.session(bind=self.env.db.engine)
+        query = session.query(StationObject)\
+            .filter(StationObject.network == network)\
+            .filter(StationObject.station == station)\
+            .first()
+        if not query:
+            msg = "Station %s.%s could not be found." % (network, station)
+            raise NotFoundError(msg)
+        result = {
+            "network_code": query.network,
+            "station_code": query.station,
+            "latitude": query.latitude,
+            "longitude": query.longitude,
+            "elevation_in_m": query.elevation_in_m,
+            "local_depth_in_m": query.local_depth_in_m,
+            "channels": []}
+        # Also parse information about all channels.
+        for channel in query.channel:
+            md = channel.channel_metadata[0]
+            info = {
+                "channel_code": channel.channel,
+                "location_code": channel.location,
+                "starttime": md.starttime,
+                "endtime": md.starttime,
+                "format": md.format,
+                "channel_filepath_id": md.filepath_id}
+            result["channels"].append({"channel": info})
+        print result
+        return formatResults(request, [result])
