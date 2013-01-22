@@ -393,11 +393,18 @@ def _read_SEED(string_io):
         else:
             time = channel["start_date"] + 0.5 * (channel["end_date"] -
                 channel["start_date"])
-        location = parser.getCoordinates(channel_id, time)
-        channel["latitude"] = location["latitude"]
-        channel["longitude"] = location["longitude"]
-        channel["elevation"] = location["elevation"]
-        channel["local_depth"] = location["local_depth"]
+        try:
+            location = parser.getCoordinates(channel_id, time)
+            channel["latitude"] = location["latitude"]
+            channel["longitude"] = location["longitude"]
+            channel["elevation"] = location["elevation"]
+            channel["local_depth"] = location["local_depth"]
+        except:
+            msg = ("Cannot retrieve location for channel. This happens when "
+                "overlapping time periods are defined in the SEED file. "
+                "Please fix the file. Contents of the file:\n")
+            msg += str(parser)
+            raise InvalidObjectError(msg)
         channel["format"] = parser._format
     return channels
 
