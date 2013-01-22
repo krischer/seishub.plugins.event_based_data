@@ -388,7 +388,12 @@ def _read_SEED(string_io):
         channel["station"] = sta
         channel["location"] = loc
         channel["channel"] = cha
-        location = parser.getCoordinates(channel_id, channel["start_date"])
+        if not channel["end_date"]:
+            time = channel["start_date"] + 2 * 86400
+        else:
+            time = channel["start_date"] + 0.5 * (channel["end_date"] -
+                channel["start_date"])
+        location = parser.getCoordinates(channel_id, time)
         channel["latitude"] = location["latitude"]
         channel["longitude"] = location["longitude"]
         channel["elevation"] = location["elevation"]
