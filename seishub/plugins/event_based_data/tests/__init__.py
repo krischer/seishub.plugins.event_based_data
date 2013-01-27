@@ -3,9 +3,10 @@ import unittest
 
 # Import the necessary files and append them to a list. These modules will be
 # searched for unittests.
+import test_event
 import test_station
 import test_waveform
-modules = (test_station, test_waveform)
+modules = (test_event, test_station, test_waveform)
 
 
 def suite():
