@@ -20,7 +20,7 @@ from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, GET, POST, PUT, DELETE
 
 from seishub.plugins.event_based_data import package, waveform, \
-    station_information
+    station_mappers
 
 
 class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
@@ -31,7 +31,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         self.env.enableComponent(package.EventResourceType)
         # Enable the mappers.
         self.env.enableComponent(
-            station_information.StationInformationUploader)
+            station_mappers.StationInformationUploader)
         self.env.enableComponent(waveform.WaveformUploader)
         self.env.tree.update()
         # Create a temporary directory where things are stored.

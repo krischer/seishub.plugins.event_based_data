@@ -19,7 +19,7 @@ import unittest
 from seishub.core.exceptions import InvalidObjectError, DuplicateObjectError, \
     InvalidParameterError
 
-from seishub.plugins.event_based_data import station_information
+from seishub.plugins.event_based_data import station_mappers
 from seishub.plugins.event_based_data.tests.test_case import \
     EventBasedDataTestCase
 from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
@@ -263,7 +263,7 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
         data.seek(0, 0)
 
         # Read the file extract a list of channel information.
-        channels = station_information._read_SEED(data)
+        channels = station_mappers._read_SEED(data)
         self.assertEqual(len(channels), 3)
         self.assertEqual(channels,
         [{"network": "GR", "end_date": "", "format": "XSEED",
@@ -293,7 +293,7 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
         data.seek(0, 0)
 
         # This file only contains information about one channel. Check it.
-        channels = station_information._read_RESP(data)
+        channels = station_mappers._read_RESP(data)
         self.assertEqual(len(channels), 1)
         self.assertEqual(channels, [
             {"network": "PM", "station": "PFVI", "location": "",
@@ -315,7 +315,7 @@ class StationUtilityFunctionsTestCase(unittest.TestCase):
         data.seek(0, 0)
 
         # This file only contains information about one channel. Check it.
-        channels = station_information._read_RESP(data)
+        channels = station_mappers._read_RESP(data)
         self.assertEqual(len(channels), 1)
         self.assertEqual(channels[0], {"station": "TPAW", "longitude": None,
             "network": "IW", "end_date": UTCDateTime(2999, 12, 31, 23, 59, 59),
