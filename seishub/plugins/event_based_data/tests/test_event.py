@@ -20,21 +20,94 @@ class EventTestCase(EventBasedDataTestCase):
     """
     Test case for the event resource.
     """
-    def test_UploadingUnnamedEvent(self):
+    def test_UploadingUnnamedEventViaXML(self):
         """
-        Tests the uploading via POST of a station RESP file. This is a rather
-        extensive test case and test all steps.
+        Tests the uploading of an unnamed event.
         """
+        # Upload event.
         event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/xml/event_based_data/event", event_file)
+        # Check if the uploaded data is correct!
         with open(event_file, "rt") as open_file:
             org_data = self._strip_xml_declaration(unicode(open_file.read()))
-        self._send_request("POST", "/xml/event_based_data/event", event_file)
         keys, results = self._query_for_complete_table(
             "/event_based_data/event")
         result = results[0]
         doc_id = result[keys.index("document_id")]
         doc = self._get_document(doc_id)
         self.assertEqual(doc, org_data)
+
+    def test_UploadingUnnamedEventViaMapper(self):
+        """
+        Same as test_UploadingUnnamedEventViaXML() but using the mapper.
+        """
+        # Upload event.
+        event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/event_based_data/event", event_file)
+        # Check if the uploaded data is correct!
+        with open(event_file, "rt") as open_file:
+            org_data = self._strip_xml_declaration(unicode(open_file.read()))
+        keys, results = self._query_for_complete_table(
+            "/event_based_data/event")
+        result = results[0]
+        doc_id = result[keys.index("document_id")]
+        doc = self._get_document(doc_id)
+        self.assertEqual(doc, org_data)
+
+    def test_UploadingNamedEventViaXML(self):
+        """
+        Tests the uploading of a named event.
+        """
+        # Upload event.
+        event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/xml/event_based_data/event/ABcDE",
+            event_file)
+        # Check if the uploaded data is correct!
+        with open(event_file, "rt") as open_file:
+            org_data = self._strip_xml_declaration(unicode(open_file.read()))
+        keys, results = self._query_for_complete_table(
+            "/event_based_data/event")
+        result = results[0]
+        doc_id = result[keys.index("document_id")]
+        doc = self._get_document(doc_id)
+        self.assertEqual(doc, org_data)
+        # Check if the name is correct.
+        res_name = doc_id = result[keys.index("resource_name")]
+        self.assertEqual(res_name, "ABcDE")
+
+    def test_UploadingNamedEventViaMapper(self):
+        """
+        Same as test_UploadingNamedEventViaXML() but via the mapper.
+        """
+        # Upload event.
+        event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/event_based_data/event/ABcDE",
+            event_file)
+        # Check if the uploaded data is correct!
+        with open(event_file, "rt") as open_file:
+            org_data = self._strip_xml_declaration(unicode(open_file.read()))
+        keys, results = self._query_for_complete_table(
+            "/event_based_data/event")
+        result = results[0]
+        doc_id = result[keys.index("document_id")]
+        doc = self._get_document(doc_id)
+        self.assertEqual(doc, org_data)
+        # Check if the name is correct.
+        res_name = doc_id = result[keys.index("resource_name")]
+        self.assertEqual(res_name, "ABcDE")
+
+    def test_DownloadingEventViaXML(self):
+        """
+        Tests if the downloading of events works.
+        """
+        # Upload event.
+        event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/event_based_data/event/TEST_EVENT",
+            event_file)
+        data = self._send_request("GET", "/event_based_data/event/TEST_EVENT",
+            event_file)
+        print data
+
 
 
 
