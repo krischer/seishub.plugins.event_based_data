@@ -94,19 +94,34 @@ format is accepted.
 
 ### Upload a new event
 
-Two possibilities (both equal)
+`POST BASE/event_based_data/event/EVENT_NAME`
 
-* `POST BASE/event_based_data/event/EVENT_NAME`
-* `POST BASE/xml/event_based_data/event/EVENT_NAME'
-
-If `EVENT_NAME` is not given, it will be given a number.
-
+The event will receive a numerical number if `EVENT_NAME` is not given.
 
 ### Retrieve an event
 
-* `GET BASE/event_based_data/event/EVENT_NAME`
-* `GET BASE/xml/event_based_data/event/EVENT_NAME'
+`GET BASE/event_based_data/event/EVENT_NAME`
 
+### Get a list of all events
+
+`GET BASE/event_based_data/event`
+
+**Options:**
+* `format`: Determines the format of the list.
+    * `xml`: default
+    * `json`
+    * `xhtml`
+
+### Get a Beachball plot of an event stored in the database
+
+`GET BASE/event_based_data/event/getBeachball?event=EVENT_NAME`
+
+**Options:**
+    * `event`: The name of the event (required)
+    * `width`: The width of the returned image (default: `150`)
+    * `facecolor`: The color of the beachball (default: `'red'`)
+
+Will return a png image.
 
 ## Station data
 
