@@ -105,7 +105,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
     def _query_for_complete_table(self, table):
         """
         Query the db for all contents of a table. Very useful for testing. Will
-        return None, if the table contains no entries.
+        return (None, None), if the table contains no entries.
         """
         tab = Table(table, self.env.db.metadata, autoload=True)
         # Build up the query.
@@ -114,7 +114,33 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         result = self.env.db.query(query)
         if result:
             return result.keys(), result.fetchall()
-        return None
+        return (None, None)
+
+    def _get_document(self, document_id):
+        """
+        Returns the document stored in the xml database with the given document
+        id. Again useful for testing. Returns None, if not found.
+        """
+        tab = Table("default_document", self.env.db.metadata, autoload=True)
+        # Build up the query.
+        query = sql.select([tab.c["data"]]).where(tab.c["id"] == document_id)
+        # Execute the query.
+        result = self.env.db.query(query)
+        if result:
+            return result.fetchone()[0]
+        else:
+            return None
+
+    def _strip_xml_declaration(self, document):
+        """
+        Removes an xml declaration like
+            <?xml version='1.0' encoding='utf-8'?>
+        from string and returns it.
+        """
+        idx = document.find("?>")
+        if idx:
+            return document[idx + 2:].strip()
+        return document
 
     def _upload_event(self):
         """
