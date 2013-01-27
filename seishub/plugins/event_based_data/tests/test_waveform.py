@@ -152,7 +152,7 @@ class WaveformTestCase(EventBasedDataTestCase):
         self._upload_event()
 
         # Event file is not a waveform file.
-        event_file = os.path.join(self.data_dir, "example_event.xml")
+        event_file = os.path.join(self.data_dir, "event1.xml")
         self.assertRaises(InvalidObjectError, self._send_request, "POST",
             "/event_based_data/waveform", event_file,
             {"event": "example_event"})

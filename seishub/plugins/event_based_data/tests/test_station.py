@@ -11,6 +11,7 @@ A test suite for station resources.
 """
 import datetime
 import inspect
+import json
 from obspy import UTCDateTime
 import os
 import StringIO
@@ -90,11 +91,61 @@ class StationTestCase(EventBasedDataTestCase):
         """
         Tests the retrieval of a list of all stations after uploading.
         """
+        # Upload two files.
+        resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
+        self._send_request("POST", "/event_based_data/station", resp_file)
+        xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
+        self._send_request("POST", "/event_based_data/station", xseed_file)
+
+        # Get a list of all
+        response = self._send_request("GET", "/event_based_data/station",
+            args={"format": "json"})
+
+        response = json.loads(response)["ResultSet"]["Result"]
+        response = sorted(response, key=lambda x: x["network"])
+        self.assertEqual(len(response), 2)
+
+        # Assert the first station
+        self.assertEqual(response[0]["network"], "GR")
+        self.assertEqual(response[0]["station"], "GEC2")
+        channels = sorted([_i["channel"] for _i in response[0]["channels"]])
+        self.assertEqual(channels, ["HHE", "HHN", "HHZ"])
+        self.assertAlmostEqual(response[0]["latitude"], 48.845085)
+        self.assertAlmostEqual(response[0]["longitude"], 13.701584)
+        self.assertAlmostEqual(response[0]["elevation_in_m"], 1132.5)
+        self.assertAlmostEqual(response[0]["local_depth_in_m"], 0.0)
+
+        # Assert the second station
+        self.assertEqual(response[1]["network"], "PM")
+        self.assertEqual(response[1]["station"], "PFVI")
+        self.assertEqual(response[1]["channels"][0]["channel"], "BHZ")
+        # RESP file do not have coordinates.
+        self.assertEqual(response[1]["latitude"], None)
+        self.assertEqual(response[1]["longitude"], None)
+        self.assertEqual(response[1]["elevation_in_m"], None)
+        self.assertEqual(response[1]["local_depth_in_m"], None)
+
+    def test_getStationListSingleStation(self):
+        """
+        Tests the retrieval of a list of one station after uploading.
+        """
         resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
         response = self._send_request("POST", "/event_based_data/station",
             resp_file)
         response = self._send_request("GET", "/event_based_data/station",
             args={"format": "json"})
+        response = json.loads(response)["ResultSet"]["Result"]
+        self.assertEqual(len(response), 1)
+        response = response[0]
+        # Assert the station
+        self.assertEqual(response["network"], "PM")
+        self.assertEqual(response["station"], "PFVI")
+        self.assertEqual(response["channels"][0]["channel"], "BHZ")
+        # RESP file do not have coordinates.
+        self.assertEqual(response["latitude"], None)
+        self.assertEqual(response["longitude"], None)
+        self.assertEqual(response["elevation_in_m"], None)
+        self.assertEqual(response["local_depth_in_m"], None)
 
     def test_XSEEDFileUploading(self):
         """
