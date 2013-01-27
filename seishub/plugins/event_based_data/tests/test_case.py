@@ -105,6 +105,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
             class dummy(object):
                 args = {}
             return self._strip_xml_declaration(response.render_GET(dummy()))
+        return response
 
     def _query_for_complete_table(self, table):
         """
