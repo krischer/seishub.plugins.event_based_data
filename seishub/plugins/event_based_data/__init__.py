@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Make sure it can run it a non-graphical environment.
 import matplotlib
 matplotlib.use('Agg')
 
 from package import *
-from waveform import *
-from station_mappers import *
 from event_mappers import *
+from station_mappers import *
+from waveform_mappers import *
 from generic_mappers import *
