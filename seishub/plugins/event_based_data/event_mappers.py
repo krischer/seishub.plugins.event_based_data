@@ -91,6 +91,9 @@ class EventMapper(Component):
         arg_start = request.postpath[0].find("?")
         args = request.postpath[0][arg_start + 1:].split("&")
         args = {_i.split("=")[0]: _i.split("=")[1] for _i in args}
+        # Somethings remain in the requests args as well.
+        # XXX: Fix this in SeisHub!
+        args.update(request.args)
 
         event = args.get("event")
         width = args.get("width", 150)
