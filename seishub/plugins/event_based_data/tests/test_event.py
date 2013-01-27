@@ -11,6 +11,8 @@ A test suite for event resources.
 """
 import json
 import os
+from PIL import Image
+from StringIO import StringIO
 import unittest
 
 from seishub.plugins.event_based_data.tests.test_case import \
@@ -151,6 +153,42 @@ class EventTestCase(EventBasedDataTestCase):
             'depth', 'document_id', 'document_last_modified', 'latitude',
             'longitude', 'magnitude', 'magnitude_type', 'package_id',
             'resource_name', 'resourcetype_id', 'scalar_moment', 'time'])
+
+    def test_getEventBeachball(self):
+        """
+        Tests the get beachball mapper.
+        """
+        # Upload event.
+        event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/xml/event_based_data/event/TEST_EVENT",
+            event_file)
+        # Get the image.
+        image = self._send_request("GET",
+            "/event_based_data/event/getBeachball?event=TEST_EVENT",
+            args={"width": 222})
+        # Use pil to check the image.
+        im = Image.open(StringIO(image))
+        self.assertEqual(im.format, "PNG")
+        self.assertEqual(im.size, (222, 222))
+        self.assertEqual(im.mode, "RGBA")
+
+    def test_getEventBeachballTestColorARg(self):
+        """
+        Tests the get beachball mapper. Simply assert that the color does
+        something.
+        """
+        # Upload event.
+        event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/xml/event_based_data/event/TEST_EVENT",
+            event_file)
+        # Get the image.
+        image_1 = self._send_request("GET",
+            "/event_based_data/event/getBeachball?event=TEST_EVENT",
+            args={"color": "blue"})
+        image_2 = self._send_request("GET",
+            "/event_based_data/event/getBeachball?event=TEST_EVENT",
+            args={"color": "yellow"})
+        self.assertNotEqual(image_1, image_2)
 
 
 def suite():
