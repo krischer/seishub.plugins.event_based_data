@@ -100,7 +100,11 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
                     file_or_fileobject = StringIO.StringIO(open_file.read())
         else:
             file_or_fileobject = None
-        return proc.run(method, url, file_or_fileobject)
+        response = proc.run(method, url, file_or_fileobject)
+        if method == "GET" and hasattr(response, "render_GET"):
+            class dummy(object):
+                args = {}
+            return response.render_GET(dummy())
 
     def _query_for_complete_table(self, table):
         """
