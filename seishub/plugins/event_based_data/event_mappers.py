@@ -57,7 +57,7 @@ class EventMapper(Component):
         path = "/xml/event_based_data/event"
         if request.postpath:
             path += "/" + "/".join(request.postpath)
-        return proc.run(POST, path, request.data)
+        return proc.run(POST, path, StringIO(request.data))
 
     def get_event_list(self, request):
         """

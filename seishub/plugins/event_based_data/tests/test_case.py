@@ -13,6 +13,7 @@ based data plugin.
 import inspect
 import os
 import shutil
+from sqlalchemy import Table, sql
 import StringIO
 import tempfile
 
@@ -20,7 +21,7 @@ from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, GET, POST, PUT, DELETE
 
 from seishub.plugins.event_based_data import package, waveform, \
-    station_mappers
+    station_mappers, event_mappers
 
 
 class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
@@ -31,6 +32,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         self.env.enableComponent(package.EventResourceType)
         # Enable the mappers.
         self.env.enableComponent(station_mappers.StationMapper)
+        self.env.enableComponent(event_mappers.EventMapper)
         self.env.enableComponent(waveform.WaveformUploader)
         self.env.tree.update()
         # Create a temporary directory where things are stored.
@@ -99,6 +101,20 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         else:
             file_or_fileobject = None
         return proc.run(method, url, file_or_fileobject)
+
+    def _query_for_complete_table(self, table):
+        """
+        Query the db for all contents of a table. Very useful for testing. Will
+        return None, if the table contains no entries.
+        """
+        tab = Table(table, self.env.db.metadata, autoload=True)
+        # Build up the query.
+        query = sql.select([tab])
+        # Execute the query.
+        result = self.env.db.query(query)
+        if result:
+            return result.keys(), result.fetchall()
+        return None
 
     def _upload_event(self):
         """
