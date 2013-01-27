@@ -20,7 +20,7 @@ import tempfile
 from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.processor import Processor, GET, POST, PUT, DELETE
 
-from seishub.plugins.event_based_data import package, waveform, \
+from seishub.plugins.event_based_data import package, waveform_mappers, \
     station_mappers, event_mappers
 
 
@@ -33,7 +33,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Enable the mappers.
         self.env.enableComponent(station_mappers.StationMapper)
         self.env.enableComponent(event_mappers.EventMapper)
-        self.env.enableComponent(waveform.WaveformUploader)
+        self.env.enableComponent(waveform_mappers.WaveformUploader)
         self.env.tree.update()
         # Create a temporary directory where things are stored.
         self.tempdir = tempfile.mkdtemp()
@@ -154,6 +154,6 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         Waveform data has to be bound to an event. This convenience functions
         uploads a simple example event, named 'example_event'.
         """
-        event_file = os.path.join(self.data_dir, "example_event.xml")
+        event_file = os.path.join(self.data_dir, "event1.xml")
         self._send_request("POST", "/xml/event_based_data/event/example_event",
             event_file)

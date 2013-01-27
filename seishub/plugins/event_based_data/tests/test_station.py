@@ -95,7 +95,6 @@ class StationTestCase(EventBasedDataTestCase):
             resp_file)
         response = self._send_request("GET", "/event_based_data/station",
             args={"format": "json"})
-        #print response
 
     def test_XSEEDFileUploading(self):
         """
@@ -194,7 +193,6 @@ class StationTestCase(EventBasedDataTestCase):
         This test is almost identical to test_RESPFileUploading().
         """
         resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
-        print resp_file
         self._send_request("POST", "/event_based_data/station", None,
             {"index_file": resp_file})
 
