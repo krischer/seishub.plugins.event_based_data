@@ -140,8 +140,14 @@ events. Currently the following file formats are supported:
 #### Get a list of all stations
 `GET BASE/event_based_data/station`
 
-#### Get the originally uploaded file of one specific station resource
+#### Get details about a specific station
 `GET BASE/event_based_data/station?network=network_code&station=station_code`
+
+**Options:**
+* `format`: Determines the format of the list.
+    * `xml`: default
+    * `json`
+    * `xhtml`
 
 
 ### Waveform data
