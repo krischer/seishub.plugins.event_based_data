@@ -102,13 +102,29 @@ class EventTestCase(EventBasedDataTestCase):
         """
         # Upload event.
         event_file = os.path.join(self.data_dir, "event1.xml")
-        self._send_request("POST", "/event_based_data/event/TEST_EVENT",
+        self._send_request("POST", "/xml/event_based_data/event/TEST_EVENT",
             event_file)
-        data = self._send_request("GET", "/event_based_data/event/TEST_EVENT",
+        data = self._send_request("GET",
+            "/xml/event_based_data/event/TEST_EVENT", event_file)
+        # Get original data.
+        with open(event_file, "rt") as open_file:
+            org_data = self._strip_xml_declaration(open_file.read())
+        self.assertEqual(data, org_data)
+
+    def test_DownloadingEventViaMapper(self):
+        """
+        Same as test_DownloadingEventViaXML() but via the mapper.
+        """
+        # Upload event.
+        event_file = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/xml/event_based_data/event/TEST_EVENT",
             event_file)
-        print data
-
-
+        data = self._send_request("GET",
+            "/xml/event_based_data/event/TEST_EVENT", event_file)
+        # Get original data.
+        with open(event_file, "rt") as open_file:
+            org_data = self._strip_xml_declaration(open_file.read())
+        self.assertEqual(data, org_data)
 
 
 def suite():
