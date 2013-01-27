@@ -17,7 +17,7 @@ from util import check_if_file_exist_in_db, write_string_to_filesystem, \
 lowercase_true_strings = ("true", "yes", "y")
 
 
-class WaveformUploader(Component):
+class WaveformMapper(Component):
     """
     Upload waveform data. The actual database will only keep track of the
     filenames and the files themselves will be stored in a folder structure on

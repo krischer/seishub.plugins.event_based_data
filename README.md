@@ -150,23 +150,26 @@ events. Currently the following file formats are supported:
     * `xhtml`
 
 
-### Waveform data
+## Waveform data
 
-All waveform formats supported by ObsPy can be uploaded. Every waveform needs
-to be bound to an already existing event
+Waveform data can be uploaded in any format supported by ObsPy. Furhtermore
+every waveform file must be bound to an already existing event. Otherwise, an
+error will be raised. SAC files are special in that they contain coordinates.
+They will be extracted upon uploading and matched with information coming from
+RESP files.
+
+### "RESTful" waveform interface
 
 #### Upload a new waveform file:
 `POST BASE/event_based_data/waveform?event=EVENT_NAME`
 
-#### Get a list of all waveform for a given event
+**Options:**
+    * `event`: The name of the event (required)
+    * `synthetic`: Simple true/false flag
+    * `index_file`: Usually the data of the POST request is uploaded to the
+        server. This might not be desireable if exising data structures are not
+        meant to be disrupted. To simply index the data, use the `index_file`
+        parameter and pass a filepath reachable for the server.
+
+#### Get a list of all waveform for a given event (Not implement yet)
 `GET BASE/event_based_data/waveform?event=EVENT_NAME`
-
-#### Index (not upload) a new waveform file:
-
-It is oftentimes desirable to just index data and not let it be managed by
-SeisHub. Passing an absolute file path (that the server can see) to the
-`index_file` parameter results results in the file being indexed and entered
-into the database while the actual file stays where it is. In this case the
-file is not managed by SeisHub, just indexed.
-
-`POST BASE/event_based_data/waveform?event=EVENT_NAME&index_file=%2Ffile%2Fpath`

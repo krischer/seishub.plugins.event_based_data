@@ -33,7 +33,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Enable the mappers.
         self.env.enableComponent(station_mappers.StationMapper)
         self.env.enableComponent(event_mappers.EventMapper)
-        self.env.enableComponent(waveform_mappers.WaveformUploader)
+        self.env.enableComponent(waveform_mappers.WaveformMapper)
         self.env.tree.update()
         # Create a temporary directory where things are stored.
         self.tempdir = tempfile.mkdtemp()
