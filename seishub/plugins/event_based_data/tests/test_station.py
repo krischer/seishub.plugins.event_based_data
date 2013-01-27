@@ -36,8 +36,10 @@ class StationTestCase(EventBasedDataTestCase):
         extensive test case and test all steps.
         """
         resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
-        data = self._send_request("POST", "/event_based_data/station",
+        self._send_request("POST", "/event_based_data/station",
             resp_file)
+        with open(resp_file, "r") as open_file:
+            data = open_file.read()
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
@@ -84,14 +86,26 @@ class StationTestCase(EventBasedDataTestCase):
         self.assertEqual(os.listdir(os.path.join(self.tempdir, "station_data",
             "PM")), ["PM.PFVI..BHZ-2007_1"])
 
+    def test_getStationList(self):
+        """
+        Tests the retrieval of a list of all stations after uploading.
+        """
+        resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
+        response = self._send_request("POST", "/event_based_data/station",
+            resp_file)
+        response = self._send_request("GET", "/event_based_data/stations/getList",
+            None)
+
     def test_XSEEDFileUploading(self):
         """
         Tests the uploading via POST of a XSEED RESP file. This is a rather
         extensive test case and test all steps.
         """
         xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
-        data = self. _send_request("POST", "/event_based_data/station",
+        self. _send_request("POST", "/event_based_data/station",
             xseed_file)
+        with open(xseed_file, "r") as open_file:
+            data = open_file.read()
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)

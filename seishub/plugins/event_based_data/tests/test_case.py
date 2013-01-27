@@ -32,6 +32,8 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Enable the mappers.
         self.env.enableComponent(
             station_mappers.StationInformationUploader)
+        self.env.enableComponent(
+            station_mappers.StationListMapper)
         self.env.enableComponent(waveform.WaveformUploader)
         self.env.tree.update()
         # Create a temporary directory where things are stored.
@@ -74,8 +76,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         file_or_fileobject can be either a StringIO with some data or a
         filename.
 
-        Returns the data from the file as a StringIO with the pointer set to 0
-        if a file has been read.
+        Returns the respone from the request.
         """
         if method.upper() == "GET":
             method = GET
@@ -100,10 +101,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
                     file_or_fileobject = StringIO.StringIO(open_file.read())
         else:
             file_or_fileobject = None
-        proc.run(method, url, file_or_fileobject)
-        if file_or_fileobject:
-            file_or_fileobject.seek(0, 0)
-            return file_or_fileobject.read()
+        return proc.run(method, url, file_or_fileobject)
 
     def _upload_event(self):
         """

@@ -53,9 +53,10 @@ class WaveformTestCase(EventBasedDataTestCase):
         # Upload an event to be able to refer to one.
         self._upload_event()
         waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
-        data = self._send_request("POST",
-            "/event_based_data/waveform", waveform_file,
+        self._send_request("POST", "/event_based_data/waveform", waveform_file,
             {"event": "example_event"})
+        with open(waveform_file, "rb") as open_file:
+            data = open_file.read()
 
         # Get the filepath object. Database should only contain one!
         session = self.env.db.session(bind=self.env.db.engine)
