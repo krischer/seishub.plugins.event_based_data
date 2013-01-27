@@ -13,6 +13,7 @@ from seishub.core.core import Component, implements
 from seishub.core.db.util import formatResults
 from seishub.core.exceptions import InvalidParameterError, NotFoundError
 from seishub.core.packages.interfaces import IMapper
+from seishub.core.processor import GET, POST, Processor
 
 from obspy.imaging.beachball import Beachball
 from PIL import Image
@@ -20,20 +21,47 @@ from sqlalchemy import Table, sql
 from StringIO import StringIO
 
 
-class EventListMapper(Component):
+class EventMapper(Component):
     """
-    Generates a list of available seismic events.
+    Event mapper.
     """
     implements(IMapper)
 
     package_id = "event_based_data"
     version = "0.0.0."
-    mapping_url = "/event_based_data/event/getList"
+    mapping_url = "/event_based_data/event"
 
     def process_GET(self, request):
         """
         Function that will be called upon receiving a GET request for the
         aforementioned URL.
+        """
+        # If a postpath is not given, return a list of all events.
+        if not request.postpath:
+            return self.get_event_list(request)
+        # getBeachball will return a rendered beachball.
+        if len(request.postpath) == 1 and \
+            request.postpath[0] == "getBeachball":
+            return self.get_beachball(request)
+        # Otherwise, just pass to the event xml resource handler.
+        proc = Processor(self.env)
+        return proc.run(GET, "/xml/event_based_data/event/" +
+            "/".join(request.postpath), None)
+
+    def process_POST(self, request):
+        """
+        Just remap to the xml rest interface.
+        """
+        # Otherwise, just pass to the event xml resource handler.
+        proc = Processor(self.env)
+        path = "/xml/event_based_data/event"
+        if request.postpath:
+            path += "/" + "/".join(request.postpath)
+        return proc.run(POST, path, request.data)
+
+    def get_event_list(self, request):
+        """
+        Return a formatted list of events.
         """
         # Directly access the database via an SQLView which is automatically
         # created for every resource type and filled with all indexed values.
@@ -51,23 +79,11 @@ class EventListMapper(Component):
         result = formatResults(request, result)
         return result
 
-
-class BeachBallMapper(Component):
-    """
-    Takes the resource_name of an event and returns a beachball.
-
-    SEISHUB_URL/event_based_data/event/getBeachball?event=8
-    """
-    implements(IMapper)
-
-    package_id = "event_based_data"
-    version = "0.0.0."
-    mapping_url = "/event_based_data/event/getBeachball"
-
-    def process_GET(self, request):
+    def get_beachball(self, request):
         """
-        Function that will be called upon receiving a GET request for the
-        aforementioned URL.
+        Takes the resource_name of an event and returns a beachball.
+
+        SEISHUB_URL/event_based_data/event/getBeachball?event=8
         """
         event = request.args.get("event")
         width = request.args.get("width", 150)
