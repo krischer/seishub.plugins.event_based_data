@@ -89,11 +89,14 @@ class EventMapper(Component):
         # have wildcard routes.
         # XXX: Check what happens with escaped HTML.
         arg_start = request.postpath[0].find("?")
-        args = request.postpath[0][arg_start + 1:].split("&")
-        args = {_i.split("=")[0]: _i.split("=")[1] for _i in args}
+        if arg_start >= 0:
+            args = request.postpath[0][arg_start + 1:].split("&")
+            args = {_i.split("=")[0]: _i.split("=")[1] for _i in args}
+        else:
+            args = {}
         # Somethings remain in the requests args as well.
         # XXX: Fix this in SeisHub!
-        args.update(request.args)
+        args.update(request.args0)
 
         event = args.get("event")
         width = args.get("width", 150)
@@ -131,7 +134,7 @@ class EventMapper(Component):
         fig.set_figheight(width / 100.0)
         fig.set_figwidth(width / 100.0)
 
-        image_data = Beachball(result.values(), linewidth=3.5, format="png",
+        image_data = Beachball(result.values(), linewidth=1.0, format="png",
             fig=fig, facecolor=facecolor)
 
         return image_data
