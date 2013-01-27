@@ -76,11 +76,11 @@ class StationMapper(Component):
         output the appropriate type.
         """
         # If network and station are given, return details.
-        network = request.args.get("network", [])
-        station = request.args.get("station", [])
+        network = request.args.get("network", None)
+        station = request.args.get("station", None)
         if network and station:
-            network = network[0]
-            station = station[0]
+            network = network
+            station = station
             return self.get_station_details(request, network, station)
 
         # XXX: This is likely not optimal.

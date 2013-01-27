@@ -307,6 +307,37 @@ class StationTestCase(EventBasedDataTestCase):
         self.assertRaises(InvalidParameterError, self._send_request, "POST",
             "/event_based_data/station", None, {"index_file": self.data_dir})
 
+    def test_stationDetailRetrieval(self):
+        """
+        Tests the retrieving of station details.
+        """
+        # Upload two files.
+        resp_file = os.path.join(self.data_dir, "RESP.PM.PFVI..BHZ")
+        self._send_request("POST", "/event_based_data/station", resp_file)
+        xseed_file = os.path.join(self.data_dir, "dataless.seed.GR_GEC2.xml")
+        self._send_request("POST", "/event_based_data/station", xseed_file)
+
+        # Get a details about the first.
+        details = self._send_request("GET", "/event_based_data/station",
+            args={"format": "json", "network": "PM", "station": "PFVI"})
+        details = json.loads(details)["ResultSet"]["Result"][0]
+        self.assertEqual(details["network_code"], "PM")
+        self.assertEqual(details["station_code"], "PFVI")
+        self.assertEqual(len(details["channels"]), 1)
+
+        # Get a details about the second.
+        details = self._send_request("GET", "/event_based_data/station",
+            args={"format": "json", "network": "GR", "station": "GEC2"})
+        details = json.loads(details)["ResultSet"]["Result"][0]
+        self.assertEqual(details["network_code"], "GR")
+        self.assertEqual(details["station_code"], "GEC2")
+        self.assertEqual(len(details["channels"]), 3)
+        # For SEED files, some additional fields can be extracted.
+        self.assertEqual(details["station_name"], "GRSN/GERES Station GEC2")
+        channels = details["channels"]
+        self.assertEqual(channels[0]["channel"]["instrument"], "STS2")
+        self.assertEqual(channels[0]["channel"]["sampling_rate"], 80.0)
+
 
 class StationUtilityFunctionsTestCase(unittest.TestCase):
     """
