@@ -18,69 +18,7 @@ from util import check_if_file_exist_in_db, write_string_to_filesystem, \
     add_or_update_channel, add_filepath_to_database
 
 
-class StationListMapper(Component):
-    """
-    Generates a list of available seismic stations.
-    """
-    implements(IMapper)
-
-    package_id = "event_based_data"
-    version = "0.0.0."
-    mapping_url = "/event_based_data/stations/getList"
-
-    def process_GET(self, request):
-        """
-        Function that will be called upon receiving a GET request for the
-        aforementioned URL.
-
-        The 'format' argument supports xml, xhtml, json, and geojson and will
-        output the appropriate type.
-        """
-        # XXX: This is likely not optimal.
-        session = self.env.db.session(bind=self.env.db.engine)
-        query = session.query(StationObject).order_by(StationObject.network)\
-            .order_by(StationObject.station).all()
-        query = [{
-            "id": i.id,
-            "network": i.network,
-            "station": i.station,
-            "latitude": i.latitude,
-            "longitude": i.longitude,
-            "elevation_in_m": i.elevation_in_m,
-            "local_depth_in_m": i.local_depth_in_m,
-            "channels": [{"channel": j.channel}
-                for j in i.channel]} for i in query]
-
-        # Encode geojson manually, let the rest be handled by a convenience
-        # method.
-        formats = request.args.get("format", [])
-        if "geojson" in formats:
-            result = {"type": "FeatureCollection",
-                "features": []}
-            for item in query:
-                feature = {"type": "Feature",
-                    "geometry": {"type": "Point",
-                        "coordinates": [item["longitude"], item["latitude"]]},
-                    "properties": {
-                        "elevation_in_m": item["elevation_in_m"],
-                        "latitude": item["latitude"],
-                        "longitude": item["longitude"],
-                        "network": item["network"],
-                        "station": item["station"],
-                        "local_depth_in_m": item["local_depth_in_m"],
-                        "channels": ", ".join([_i["channel"]
-                            for _i in item["channels"]])},
-                    "id": "%s.%s" % (item["network"], item["station"])}
-                result["features"].append(feature)
-            result = json.dumps(result)
-            request.setHeader('content-type',
-                'application/json; charset=UTF-8')
-        else:
-            result = formatResults(request, query)
-        return result
-
-
-class StationInformationUploader(Component):
+class StationMapper(Component):
     """
     Upload station information data. The actual database will only keep track
     of the filenames and the files themselves will be stored in a folder
@@ -132,11 +70,53 @@ class StationInformationUploader(Component):
 
     def process_GET(self, request):
         """
-        Function that will be called upon receiving a GET request for the
-        aforementioned URL.
+        Generates a list of available seismic stations.
+
+        The 'format' argument supports xml, xhtml, json, and geojson and will
+        output the appropriate type.
         """
-        # Get not allowed for this mapper. Return 404.
-        raise NotFoundError("GET not supported for this URL.")
+        # XXX: This is likely not optimal.
+        session = self.env.db.session(bind=self.env.db.engine)
+        query = session.query(StationObject).order_by(StationObject.network)\
+            .order_by(StationObject.station).all()
+        query = [{
+            "id": i.id,
+            "network": i.network,
+            "station": i.station,
+            "latitude": i.latitude,
+            "longitude": i.longitude,
+            "elevation_in_m": i.elevation_in_m,
+            "local_depth_in_m": i.local_depth_in_m,
+            "channels": [{"channel": j.channel}
+                for j in i.channel]} for i in query]
+
+        # Encode geojson manually, let the rest be handled by a convenience
+        # method.
+        formats = request.args.get("format", [])
+        if "geojson" in formats:
+            result = {"type": "FeatureCollection",
+                "features": []}
+            for item in query:
+                feature = {"type": "Feature",
+                    "geometry": {"type": "Point",
+                        "coordinates": [item["longitude"], item["latitude"]]},
+                    "properties": {
+                        "elevation_in_m": item["elevation_in_m"],
+                        "latitude": item["latitude"],
+                        "longitude": item["longitude"],
+                        "network": item["network"],
+                        "station": item["station"],
+                        "local_depth_in_m": item["local_depth_in_m"],
+                        "channels": ", ".join([_i["channel"]
+                            for _i in item["channels"]])},
+                    "id": "%s.%s" % (item["network"], item["station"])}
+                result["features"].append(feature)
+            result = json.dumps(result)
+            request.setHeader('content-type',
+                'application/json; charset=UTF-8')
+        else:
+            result = formatResults(request, query)
+        return result
 
     def process_POST(self, request):
         """
@@ -146,7 +126,8 @@ class StationInformationUploader(Component):
         # There are two possibilities for getting data inside the database:
         # upload the file directly to SeisHub or just give a file URL that the
         # server can find.
-        filename = request.args0.get("index_file", None)
+        filename = request.args.get("index_file", None)
+
         # If the 'index_file' parameter is not given, assume the file will be
         # directly uploaded.
         if filename is None:

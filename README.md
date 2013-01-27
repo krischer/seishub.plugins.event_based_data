@@ -79,23 +79,45 @@ The plug-in has two plug-in specific configuration options (can be set in
 Restart the Seishub server to apply the options.
 
 
-# API Definition
+# API Documentation
 
 `BASE` always refers to the base SeisHub URL of the server including the port
-number. Most data is bound to a certain event. In that case the event argument
-in the form `event=EVENT_NAME` is appended to the url. This in unified across
-all event bound data types.
+number. Most data is bound to a certain event. In that case the event parameter
+should be given in the form `event=EVENT_NAME` and appended to the url. This in
+unified across all event bound data types.
+
+## Event data
+
+Most data is, as the plug-in name implies bound to a certain event. Thus
+uploading a new event is always the first step. Currently only the QuakeML
+format is accepted.
+
+### Upload a new event
+
+Two possibilities (both equal)
+
+* `POST BASE/event_based_data/event/EVENT_NAME`
+* `POST BASE/xml/event_based_data/event/EVENT_NAME'
+
+If `EVENT_NAME` is not given, it will be given a number.
+
+
+### Retrieve an event
+
+* `GET BASE/event_based_data/event/EVENT_NAME`
+* `GET BASE/xml/event_based_data/event/EVENT_NAME'
+
 
 ## Station data
 
 Station data is not bound to any event as it is potentially shared between many
-events. Currently the following file formats are accepted:
+events. Currently the following file formats are supported:
 
 * SEED
 * XML-SEED
 * RESP (needs corresponding SAC files to get station coordinates)
 
-### Station "RESTful" interface
+### "RESTful" station interface
 
 #### Upload a new station:
 `POST BASE/event_based_data/station`
@@ -105,23 +127,6 @@ events. Currently the following file formats are accepted:
 
 #### Get the originally uploaded file of one specific station resource
 `GET BASE/event_based_data/station?network=network_code&station=station_code`
-
-
-### Event data
-
-Most data is, as the plug-in name implies bound to a certain event. Thus
-uploading a new event is always the first step. Currently only the QuakeML
-format is accepted.
-
-#### Upload a new, unnamed event
-`POST BASE/event_based_data/event`
-    which is just an alias for
-`POST BASE/xml/event_based_data/event'
-
-#### Upload a new, named event
-`POST BASE/event_based_data/event/EVENT_NAME`
-    which is just an alias for
-`POST BASE/xml/event_based_data/event/EVENT_NAME`
 
 
 ### Waveform data

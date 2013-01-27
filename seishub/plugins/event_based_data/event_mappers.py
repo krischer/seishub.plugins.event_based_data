@@ -69,10 +69,10 @@ class BeachBallMapper(Component):
         Function that will be called upon receiving a GET request for the
         aforementioned URL.
         """
-        event = request.args0.get("event")
-        width = request.args0.get("width", 150)
+        event = request.args.get("event")
+        width = request.args.get("width", 150)
         width = int(width)
-        facecolor = request.args0.get("color", "red")
+        facecolor = request.args.get("color", "red")
 
         if not event:
             raise InvalidParameterError("'event' parameter missing.")

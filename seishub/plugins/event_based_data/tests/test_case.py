@@ -30,10 +30,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Enable the XML resources
         self.env.enableComponent(package.EventResourceType)
         # Enable the mappers.
-        self.env.enableComponent(
-            station_mappers.StationInformationUploader)
-        self.env.enableComponent(
-            station_mappers.StationListMapper)
+        self.env.enableComponent(station_mappers.StationMapper)
         self.env.enableComponent(waveform.WaveformUploader)
         self.env.tree.update()
         # Create a temporary directory where things are stored.
@@ -57,7 +54,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         # Remove the temporary directory.
         shutil.rmtree(self.tempdir)
 
-    def _send_request(self, method, url, file_or_fileobject, args=None):
+    def _send_request(self, method, url, file_or_fileobject=None, args=None):
         """
         Uploads a file with the given method to the given url.
 
@@ -93,7 +90,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # Append potential arguments.
         if args:
-            proc.args0 = args
+            proc.args = args
         if file_or_fileobject:
             if not hasattr(file_or_fileobject, "read") or \
                 not hasattr(file_or_fileobject, "seek"):
