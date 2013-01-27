@@ -9,6 +9,7 @@ A test suite for event resources.
     GNU Lesser General Public License, Version 3
     (http://www.gnu.org/copyleft/lesser.html)
 """
+import json
 import os
 import unittest
 
@@ -125,6 +126,31 @@ class EventTestCase(EventBasedDataTestCase):
         with open(event_file, "rt") as open_file:
             org_data = self._strip_xml_declaration(open_file.read())
         self.assertEqual(data, org_data)
+
+    def test_GetEventList(self):
+        """
+        Tests if getting a list of all uploaded events works.
+        """
+        event_file_1 = os.path.join(self.data_dir, "event1.xml")
+        self._send_request("POST", "/xml/event_based_data/event/TEST_EVENT_1",
+            event_file_1)
+        event_file_2 = os.path.join(self.data_dir, "event2.xml")
+        self._send_request("POST", "/xml/event_based_data/event/TEST_EVENT_2",
+            event_file_2)
+        # Now get a list. Use json format as it is easy to pass. The other
+        # formats are tested elsewhere.
+        response = self._send_request("GET", "/event_based_data/event",
+            args={"format": "json"})
+        response = json.loads(response)[u"ResultSet"][u"Result"]
+        # Do two very simple assertions. The rest is basically assured by
+        # Seishubs xml handling.
+        events = sorted([str(_i["resource_name"]) for _i in response])
+        self.assertEqual(events, ["TEST_EVENT_1", "TEST_EVENT_2"])
+        keys = [str(_i) for _i in sorted(response[0].keys())]
+        self.assertEqual(keys, ['Mpp', 'Mrp', 'Mrr', 'Mrt', 'Mtp', 'Mtt',
+            'depth', 'document_id', 'document_last_modified', 'latitude',
+            'longitude', 'magnitude', 'magnitude_type', 'package_id',
+            'resource_name', 'resourcetype_id', 'scalar_moment', 'time'])
 
 
 def suite():
