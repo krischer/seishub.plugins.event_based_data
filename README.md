@@ -30,7 +30,7 @@ course of a tomographic inversion.
     * Python 2.7.x (should work with 2.6 but that is untested)
     * seishub.core
     * ObsPy >= 0.8.3
-    * PIL
+    * PIL (only for running the tests)
 
 And naturally all dependencies of the listed modules.
 

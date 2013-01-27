@@ -15,8 +15,8 @@ from seishub.core.exceptions import InvalidParameterError, NotFoundError
 from seishub.core.packages.interfaces import IMapper
 from seishub.core.processor import GET, POST, Processor
 
+import matplotlib.pyplot as plt
 from obspy.imaging.beachball import Beachball
-from PIL import Image
 from sqlalchemy import Table, sql
 from StringIO import StringIO
 
@@ -41,7 +41,7 @@ class EventMapper(Component):
             return self.get_event_list(request)
         # getBeachball will return a rendered beachball.
         if len(request.postpath) == 1 and \
-            request.postpath[0] == "getBeachball":
+            request.postpath[0].startswith("getBeachball"):
             return self.get_beachball(request)
         # Otherwise, just pass to the event xml resource handler.
         proc = Processor(self.env)
@@ -85,10 +85,17 @@ class EventMapper(Component):
 
         SEISHUB_URL/event_based_data/event/getBeachball?event=8
         """
-        event = request.args.get("event")
-        width = request.args.get("width", 150)
+        # Manual argument parsing is necessary. Unfortunately Seishub does not
+        # have wildcard routes.
+        # XXX: Check what happens with escaped HTML.
+        arg_start = request.postpath[0].find("?")
+        args = request.postpath[0][arg_start + 1:].split("&")
+        args = {_i.split("=")[0]: _i.split("=")[1] for _i in args}
+
+        event = args.get("event")
+        width = args.get("width", 150)
         width = int(width)
-        facecolor = request.args.get("color", "red")
+        facecolor = args.get("color", "red")
 
         if not event:
             raise InvalidParameterError("'event' parameter missing.")
@@ -115,15 +122,13 @@ class EventMapper(Component):
         # generate correct header
         request.setHeader('content-type', 'image/png; charset=UTF-8')
 
-        # Eventually resize it as the Beachball plotting method has
-        # singularities for small image sizes.
-        real_width = width if width >= 100 else 100
-        data = StringIO(Beachball(result.values(), linewidth=3.5, format="png",
-            width=real_width, facecolor=facecolor))
-        if width < real_width:
-            im = Image.open(data).resize((width, width), Image.ANTIALIAS)
-            buf = StringIO()
-            im.save(buf, format="png")
-            buf.seek(0, 0)
-            return buf.read()
-        return data.read()
+        # Setup the figure to get the desired file size.
+        fig = plt.figure(figsize=(3, 3), dpi=100)
+        fig.subplots_adjust(left=0, bottom=0, right=1, top=1)
+        fig.set_figheight(width / 100.0)
+        fig.set_figwidth(width / 100.0)
+
+        image_data = Beachball(result.values(), linewidth=3.5, format="png",
+            fig=fig, facecolor=facecolor)
+
+        return image_data
