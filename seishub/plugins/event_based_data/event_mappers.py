@@ -96,7 +96,7 @@ class EventMapper(Component):
             args = {}
         # Somethings remain in the requests args as well.
         # XXX: Fix this in SeisHub!
-        args.update(request.args0)
+        args.update(request.args)
 
         event = args.get("event")
         width = args.get("width", 150)

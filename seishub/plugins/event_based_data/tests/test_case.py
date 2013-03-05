@@ -104,9 +104,18 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
             file_or_fileobject = None
         response = proc.run(method, url, file_or_fileobject)
         if method == "GET" and hasattr(response, "render_GET"):
+
             class dummy(object):
-                args = {}
-            return self._strip_xml_declaration(response.render_GET(dummy()))
+                pass
+            dum = dummy()
+            dum.args = {}
+            dum.env = dummy()
+            dum.env.auth = dummy()
+            temp = dummy()
+            temp.permissions = 755
+            dum.env.auth.getUser = lambda x: temp
+
+            return self._strip_xml_declaration(response.render_GET(dum))
         return response
 
     def _query_for_complete_table(self, table):
