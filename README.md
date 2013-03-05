@@ -27,7 +27,7 @@ course of a tomographic inversion.
 
 ### Requirements
 
-    * Python 2.7.x (should work with 2.6 but that is untested)
+    * Python 2.7.x
     * seishub.core
     * ObsPy >= 0.8.3
     * PIL (only for running the tests)
