@@ -108,7 +108,7 @@ class WaveformTestCase(EventBasedDataTestCase):
 
         # Also check that it has been uploaded to the correct directory.
         self.assertEqual(os.listdir(os.path.join(self.tempdir, "waveform_data",
-            "PM", "PFVI")), ["PM.PFVI..BHE-2012_8_27_4"])
+            "example_event")), ["PM.PFVI..BHE-2012_8_27_4"])
 
     def test_settingSyntheticsFlagMarksFileAsSynthetic(self):
         """

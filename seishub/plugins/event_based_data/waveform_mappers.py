@@ -41,7 +41,7 @@ class WaveformMapper(Component):
     network or station codes will be replaced with "XX". It will always be
     named after the first trace in the file.
 
-        network/station/network.station.location.channel-year_month_day_hour
+        event_id/network.station.location.channel-year_month_day_hour
 
     If necessary, a ".1", ".2", ... will be appended to the filename if many
     files close to one another in time are stored.
@@ -160,7 +160,7 @@ class WaveformMapper(Component):
             # Otherwise create the filename for the file, and check if it
             # exists.
             filename = os.path.join(self.env.config.get("event_based_data",
-                "waveform_filepath"), network, station,
+                "waveform_filepath"), event_id,
                 ("{network}.{station}.{location}.{channel}-"
                 "{year}_{month}_{day}_{hour}"))
             t = st[0].stats.starttime
