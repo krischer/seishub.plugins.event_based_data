@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 from seishub.core.core import Component, implements
 from seishub.core.exceptions import InvalidObjectError, InternalServerError, \
-    InvalidParameterError
+    InvalidParameterError, NotFoundError
 from seishub.core.packages.interfaces import IMapper
 from seishub.core.db.util import formatResults
 
-from obspy.core import read
+from obspy import read, UTCDateTime
+from obspy.core.util import NamedTemporaryFile
 import os
-import StringIO
+import sqlalchemy
+from StringIO import StringIO
 
-from table_definitions import WaveformChannelObject
+from table_definitions import ChannelObject, WaveformChannelObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
-    add_filepath_to_database, add_or_update_channel, get_all_tags, event_exists
+    add_filepath_to_database, add_or_update_channel, get_all_tags, \
+    event_exists, get_station_id
 
 lowercase_true_strings = ("true", "yes", "y")
 
@@ -86,18 +89,93 @@ class WaveformMapper(Component):
         """
         # Parse the given parameters.
         event_id = request.args0.get("event", None)
+        channel_id = request.args0.get("channel_id", None)
+        tag = request.args0.get("tag", None)
 
         # An event id is obviously needed.
         if event_id is None:
             msg = ("No event parameter passed. Every waveform "
-                "must be bound to an existing event.")
+                "is bound to an existing event.")
             raise InvalidParameterError(msg)
 
-        if not event_exists(event_id, self.env):
+        if event_id is not None and not event_exists(event_id, self.env):
             msg = "The given event resource name '%s' " % event_id
             msg += "is not known to SeisHub."
             raise InvalidParameterError(msg)
 
+        if channel_id is None and tag is None and event_id is not None:
+            return self.getListForEvent(event_id, request)
+
+        if channel_id is None:
+            msg = ("To download a waveform, 'channel_id' to be specified.")
+            raise InvalidParameterError(msg)
+
+        split_channel = channel_id.split(".")
+        if len(split_channel) != 4:
+            msg = "Invalid 'channel_id'. Needs to be NET.STA.LOC.CHAN."
+            raise InvalidParameterError(msg)
+
+        network, station, location, channel = split_channel
+
+        session = self.env.db.session(bind=self.env.db.engine)
+        station_id = get_station_id(network, station, session)
+        if station_id is False:
+            session.close()
+            msg = "Could not find station %s.%s in the database" % \
+                (network, station)
+            raise InvalidParameterError(msg)
+
+        query = session.query(WaveformChannelObject)\
+            .join(ChannelObject, ChannelObject.station_id == station_id)\
+            .filter(WaveformChannelObject.event_resource_id == event_id)\
+            .filter(ChannelObject.location == location)\
+            .filter(ChannelObject.channel == channel)
+
+        try:
+            result = query.one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            session.close()
+            msg = "No matching data found in the database."
+            raise NotFoundError(msg)
+
+        chan = result.channel
+        stat = chan.station
+        network = stat.network
+        station = stat.station
+        location = chan.location
+        channel = chan.channel
+        starttime = UTCDateTime(result.starttime) if result.starttime else None
+        endtime = UTCDateTime(result.endtime) if result.endtime else None
+        default_format = result.format
+
+        # Read and filter the file.
+        st = read(result.filepath.filepath).select(network=network,
+            station=station, location=location, channel=channel)
+
+        # Now attempt to find the correct trace in case of more then one trace.
+        # This should enable multicomponent files.
+        selected_trace = None
+        for tr in st:
+            if (starttime and abs(tr.stats.starttime - starttime) > 1) or \
+                    (endtime and abs(tr.stats.endtime - endtime) > 1):
+                continue
+            selected_trace = tr
+            break
+
+        if selected_trace is None:
+            msg = "Could not find the corresponding waveform file."
+            raise InternalServerError(msg)
+
+        # XXX: Fix some ObsPy modules to be able to write to memory files.
+        tempfile = NamedTemporaryFile()
+        selected_trace.write(tempfile.name, format=default_format)
+        with open(tempfile.name, "rb") as open_file:
+            data = open_file.read()
+        tempfile.close()
+        os.remove(tempfile.name)
+        return data
+
+    def getListForEvent(self, event_id, request):
         # Get all waveform channels corresponding to that id.
         session = self.env.db.session(bind=self.env.db.engine)
         query = session.query(WaveformChannelObject)\
@@ -167,7 +245,7 @@ class WaveformMapper(Component):
                     filename
                 raise InvalidParameterError(msg)
             with open(filename, "rb") as open_file:
-                waveform_data = StringIO.StringIO(open_file.read())
+                waveform_data = StringIO(open_file.read())
             waveform_data.seek(0, 0)
             file_is_managed_by_seishub = False
 

@@ -385,6 +385,27 @@ class WaveformTestCase(EventBasedDataTestCase):
             "station": "PFVI",
             "tag": "modified"}, response2)
 
+    def test_getWaveformFile(self):
+        """
+        Tests downloading a waveform file.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        # Upload some data.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event"})
+
+        # Now download it again.
+        data = self._send_request("GET",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "channel_id": "PM.PFVI..BHE"})
+        old_st = read(waveform_file)
+        new_st = read(StringIO(data))
+        self.assertEqual(new_st, old_st)
+
 
 def suite():
     suite = unittest.TestSuite()

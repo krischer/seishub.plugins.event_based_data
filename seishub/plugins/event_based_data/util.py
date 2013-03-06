@@ -67,6 +67,22 @@ def check_if_file_exist_in_db(data, env):
     return md5_hash
 
 
+def get_station_id(network, station, session):
+    """
+    Get the station_id for a given network and station combination. Requires an
+    open session.
+    """
+    # XXX: Figure out how to do this properly with joins and the like.
+    query = session.query(StationObject.id)\
+        .filter(StationObject.network == network)\
+        .filter(StationObject.station == station)
+    try:
+        station_id = query.one()[0]
+    except sqlalchemy.orm.exc.NoResultFound:
+        return False
+    return station_id
+
+
 def get_all_tags(network, station, location, channel, event_id, env):
     """
     Helper function returning a list of all tags for a given channel and event
@@ -74,16 +90,10 @@ def get_all_tags(network, station, location, channel, event_id, env):
     database for the requested combination.
     """
     session = env.db.session(bind=env.db.engine)
-    # XXX: Figure out how to do this properly with joins and the like.
-    query = session.query(StationObject.id)\
-        .filter(StationObject.network == network)\
-        .filter(StationObject.station == station)
-    try:
-        station_id = query.one()
-    except sqlalchemy.orm.exc.NoResultFound:
-        return []
 
-    station_id = station_id[0]
+    station_id = get_station_id(network, station, session)
+    if station_id is False:
+        return []
 
     query = session.query(WaveformChannelObject.tag)\
         .join(ChannelObject, ChannelObject.station_id == station_id)\
