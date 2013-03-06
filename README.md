@@ -172,5 +172,11 @@ RESP files.
         meant to be disrupted. To simply index the data, use the `index_file`
         parameter and pass a filepath reachable for the server.
 
-#### Get a list of all waveform for a given event (Not implement yet)
+#### Get a list of all waveforms for a given event
 `GET BASE/event_based_data/waveform?event=EVENT_NAME`
+
+**Options:**
+* `format`: Determines the format of the list.
+    * `xml`: default
+    * `json`
+    * `xhtml`
