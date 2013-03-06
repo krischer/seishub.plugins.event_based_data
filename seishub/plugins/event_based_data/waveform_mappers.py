@@ -90,7 +90,14 @@ class WaveformMapper(Component):
         # Parse the given parameters.
         event_id = request.args0.get("event", None)
         channel_id = request.args0.get("channel_id", None)
-        tag = request.args0.get("tag", None)
+        tag = request.args0.get("tag", "")
+        format = request.args0.get("format", None)
+
+        acceptable_formats = ["mseed", "sac", "gse2", "segy", "raw"]
+        if format and format.lower() not in acceptable_formats:
+            msg = "'%s' is an unsupported format. Supported formats: %s" % \
+                (format, ", ".join(acceptable_formats))
+            raise InvalidParameterError(msg)
 
         # An event id is obviously needed.
         if event_id is None:
@@ -103,7 +110,7 @@ class WaveformMapper(Component):
             msg += "is not known to SeisHub."
             raise InvalidParameterError(msg)
 
-        if channel_id is None and tag is None and event_id is not None:
+        if channel_id is None and event_id is not None:
             return self.getListForEvent(event_id, request)
 
         if channel_id is None:
@@ -128,6 +135,7 @@ class WaveformMapper(Component):
         query = session.query(WaveformChannelObject)\
             .join(ChannelObject, ChannelObject.station_id == station_id)\
             .filter(WaveformChannelObject.event_resource_id == event_id)\
+            .filter(WaveformChannelObject.tag == tag)\
             .filter(ChannelObject.location == location)\
             .filter(ChannelObject.channel == channel)
 
@@ -137,6 +145,11 @@ class WaveformMapper(Component):
             session.close()
             msg = "No matching data found in the database."
             raise NotFoundError(msg)
+
+        if format and format.lower() == "raw":
+            with open(result.filepath.filepath, "rb") as open_file:
+                data = open_file.read()
+            return data
 
         chan = result.channel
         stat = chan.station
@@ -151,6 +164,7 @@ class WaveformMapper(Component):
         # Read and filter the file.
         st = read(result.filepath.filepath).select(network=network,
             station=station, location=location, channel=channel)
+        session.close()
 
         # Now attempt to find the correct trace in case of more then one trace.
         # This should enable multicomponent files.
@@ -168,6 +182,8 @@ class WaveformMapper(Component):
 
         # XXX: Fix some ObsPy modules to be able to write to memory files.
         tempfile = NamedTemporaryFile()
+        if format:
+            default_format = format
         selected_trace.write(tempfile.name, format=default_format)
         with open(tempfile.name, "rb") as open_file:
             data = open_file.read()

@@ -398,13 +398,106 @@ class WaveformTestCase(EventBasedDataTestCase):
             "/event_based_data/waveform", waveform_file,
             {"event": "example_event"})
 
-        # Now download it again.
+        # Upload another file and slightly modify it.
+        st = read(waveform_file)
+        st[0].stats.starttime += 2
+        st[0].data *= 1.5
+        w_file = StringIO()
+        st.write(w_file, format="mseed")
+        w_file.seek(0, 0)
+        self._send_request("POST",
+            "/event_based_data/waveform", w_file,
+            {"event": "example_event", "tag": "modified"})
+
+        # Now download the first file again.
         data = self._send_request("GET",
             "/event_based_data/waveform", waveform_file,
             {"event": "example_event", "channel_id": "PM.PFVI..BHE"})
         old_st = read(waveform_file)
         new_st = read(StringIO(data))
         self.assertEqual(new_st, old_st)
+
+        # And the second one.
+        data = self._send_request("GET",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "channel_id": "PM.PFVI..BHE",
+                "tag": "modified"})
+        new_st = read(StringIO(data))
+
+        # Remove the file format specific parts.
+        del st[0].stats.sac
+        del new_st[0].stats.mseed
+        del st[0].stats._format
+        del new_st[0].stats._format
+        # Fix slightly inaccurate SAC starttime.
+        self.assertTrue(
+            abs(st[0].stats.starttime - new_st[0].stats.starttime) < 0.01)
+        self.assertTrue(
+            abs(st[0].stats.endtime - new_st[0].stats.endtime) < 0.01)
+        st[0].stats.starttime = new_st[0].stats.starttime
+
+        self.assertEqual(new_st, st)
+
+    def test_downloadDifferentFormats(self):
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        # Upload some data.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event"})
+
+        # Now download the first file again.
+        data = self._send_request("GET",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "channel_id": "PM.PFVI..BHE"})
+        old_st = read(waveform_file)
+        new_st = read(StringIO(data))
+        self.assertEqual(new_st, old_st)
+
+        # Download MiniSEED data.
+        data = self._send_request("GET",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "channel_id": "PM.PFVI..BHE",
+            "format": "mseed"})
+        st = read(StringIO(data))
+        self.assertEqual(st[0].stats._format, "MSEED")
+
+        # Remove the file format specific parts.
+        del st[0].stats.mseed
+        del old_st[0].stats.sac
+        del st[0].stats._format
+        del old_st[0].stats._format
+        # Fix slightly inaccurate SAC starttime.
+        self.assertTrue(
+            abs(st[0].stats.starttime - old_st[0].stats.starttime) < 0.01)
+        self.assertTrue(
+            abs(st[0].stats.endtime - old_st[0].stats.endtime) < 0.01)
+        st[0].stats.starttime = old_st[0].stats.starttime
+        self.assertEqual(st, old_st)
+
+        # Download SAC data.
+        data = self._send_request("GET",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "channel_id": "PM.PFVI..BHE",
+            "format": "sac"})
+        st = read(StringIO(data))
+        self.assertEqual(st[0].stats._format, "SAC")
+        # Remove the file format specific parts.
+        del st[0].stats.sac
+        del st[0].stats._format
+        self.assertEqual(st, old_st)
+
+        # Download raw data. Should be byte for byte the same as the original
+        # input data.
+        data = self._send_request("GET",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "channel_id": "PM.PFVI..BHE",
+            "format": "raw"})
+        with open(waveform_file, "rb") as open_file:
+            old_data = open_file.read()
+        self.assertEqual(data, old_data)
 
 
 def suite():

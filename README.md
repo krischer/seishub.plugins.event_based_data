@@ -118,9 +118,9 @@ The event will receive a numerical number if `EVENT_NAME` is not given.
 `GET BASE/event_based_data/event/getBeachball?event=EVENT_NAME`
 
 **Options:**
-    * `event`: The name of the event (required)
-    * `width`: The width of the returned image (default: `150`)
-    * `color`: The facecolor of the beachball (default: `'red'`)
+* `event`: The name of the event (required)
+* `width`: The width of the returned image (default: `150`)
+* `color`: The facecolor of the beachball (default: `'red'`)
 
 Will return a png image.
 
@@ -165,12 +165,16 @@ RESP files.
 `POST BASE/event_based_data/waveform?event=EVENT_NAME`
 
 **Options:**
-    * `event`: The name of the event (required)
-    * `synthetic`: Simple true/false flag
-    * `index_file`: Usually the data of the POST request is uploaded to the
-        server. This might not be desireable if exising data structures are not
-        meant to be disrupted. To simply index the data, use the `index_file`
-        parameter and pass a filepath reachable for the server.
+* `event`: The name of the event (required)
+* `synthetic`: Simple true/false flag
+* `index_file`: Usually the data of the POST request is uploaded to the server.
+    This might not be desireable if exising data structures are not meant to be
+    disrupted. To simply index the data, use the `index_file` parameter and
+    pass a filepath reachable for the server.
+* `tag`: Optional tag for the waveform file. This is an easy way to distinguish
+    different files for the same event and channel. If none is given, it will
+    result in an empty tag. By convention this means that the data is the raw
+    data from the recording station.
 
 #### Get a list of all waveforms for a given event
 `GET BASE/event_based_data/waveform?event=EVENT_NAME`
@@ -180,6 +184,26 @@ RESP files.
     * `xml`: default
     * `json`
     * `xhtml`
+
+#### Get a waveform file
+`GET BASE/event_based_data/waveform?event=EVENT_NAME&channel_id=NET.STA.LOC.CHA`
+
+**Options:**
+* `channel_id`: Id of the channel to retrieve in the form *NET.STA.LOC.CHA*
+* `tag`: Which tag to retrieve. If none is given it will be interpreted as an
+    empty tag. This will, by convention, return the raw data from the recording
+    station.
+* `format`: The output format (optional). If none is given, the file will be
+    returned in the same format as it was originally uploaded in. Available
+    choices:
+        * `mseed`
+        * `sac`
+        * `gse2` (Only supported for some data types)
+        * `segy` (Only supported for some data types)
+        * `raw` - This one is special. It will simply return the raw,
+            originally uploaded data. In the case of multicomponent files it
+            will return a file containing all these components.
+
 
 
 ## Misc mappers
