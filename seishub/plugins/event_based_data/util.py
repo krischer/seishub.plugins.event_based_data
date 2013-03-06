@@ -60,12 +60,14 @@ def get_all_tags(network, station, location, channel, event_id, env):
     except sqlalchemy.orm.exc.NoResultFound:
         return []
 
+    station_id = station_id[0]
+
     query = session.query(WaveformChannelObject.tag)\
         .join(ChannelObject, ChannelObject.station_id == station_id)\
         .filter(WaveformChannelObject.event_resource_id == event_id)\
         .filter(ChannelObject.location == location)\
         .filter(ChannelObject.channel == channel)
-    return query.all()
+    return [_i[0] for _i in query.all()]
 
 
 def write_string_to_filesystem(filename, string):

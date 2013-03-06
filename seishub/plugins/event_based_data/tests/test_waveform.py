@@ -10,7 +10,9 @@ A test suite for waveform uploading.
     (http://www.gnu.org/copyleft/lesser.html)
 """
 import datetime
+from obspy import read
 import os
+from StringIO import StringIO
 import unittest
 
 from seishub.core.exceptions import InvalidParameterError, InvalidObjectError
@@ -19,6 +21,7 @@ from seishub.plugins.event_based_data.tests.test_case import \
     EventBasedDataTestCase
 from seishub.plugins.event_based_data.table_definitions import FilepathObject,\
     StationObject, ChannelObject, WaveformChannelObject
+from seishub.plugins.event_based_data.util import get_all_tags
 
 
 class WaveformTestCase(EventBasedDataTestCase):
@@ -244,6 +247,79 @@ class WaveformTestCase(EventBasedDataTestCase):
 
         # Also check that the actual data directory has no entries!
         self.assertEqual(os.listdir(self.tempdir), [])
+
+    def test_settingTags(self):
+        """
+        Tests if setting the tags works.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event", "tag": "some_tag"})
+        session = self.env.db.session(bind=self.env.db.engine)
+        waveform = session.query(WaveformChannelObject).one()
+        self.assertEqual(waveform.tag, "some_tag")
+
+        # Uploading the same tag again should fail. This time, slightly modify
+        # the file as otherwise it will not be accepted anyways.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        st = read(waveform_file)
+        st[0].stats.starttime += 2
+        w_file = StringIO()
+        st.write(w_file, format="mseed")
+        w_file.seek(0, 0)
+        self.assertRaises(InvalidParameterError, self._send_request, "POST",
+            "/event_based_data/waveform", w_file,
+            {"event": "example_event", "tag": "some_tag"})
+
+        # Uploading the same file with another tag on the other hand should
+        # work just fine.
+        w_file.seek(0, 0)
+        self._send_request("POST",
+            "/event_based_data/waveform", w_file,
+            {"event": "example_event", "tag": "some_other_tag"})
+
+        # Now there should be two registered tags.
+        s = st[0].stats
+        tags = get_all_tags(s.network, s.station, s.location, s.channel,
+            "example_event", self.env)
+        self.assertEqual(tags, ["some_tag", "some_other_tag"])
+
+    def test_emptyTag(self):
+        """
+        Setting an empty tag only works once. Then it raises.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event"})
+        session = self.env.db.session(bind=self.env.db.engine)
+        waveform = session.query(WaveformChannelObject).one()
+        self.assertEqual(waveform.tag, "")
+
+        # Uploading the same tag again should fail. This time, slightly modify
+        # the file as otherwise it will not be accepted anyways.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        st = read(waveform_file)
+        st[0].stats.starttime += 2
+        w_file = StringIO()
+        st.write(w_file, format="mseed")
+        w_file.seek(0, 0)
+        self.assertRaises(InvalidParameterError, self._send_request, "POST",
+            "/event_based_data/waveform", w_file,
+            {"event": "example_event"})
+
+        # The empty tag still counts as a tag
+        s = st[0].stats
+        tags = get_all_tags(s.network, s.station, s.location, s.channel,
+            "example_event", self.env)
+        self.assertEqual(tags, [""])
 
 
 def suite():

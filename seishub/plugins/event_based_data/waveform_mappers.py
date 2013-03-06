@@ -213,9 +213,9 @@ class WaveformMapper(Component):
                     # If any is invalid, assume all are.
                     if -12345.0 in [latitude, longitude, elevation] or \
                         None in [latitude, longitude, elevation]:
-                        latitude, longitude, elevation, local_depth = None
+                        latitude, longitude, elevation, local_depth = [None] * 4
                 else:
-                    latitude, longitude, elevation, local_depth = None
+                    latitude, longitude, elevation, local_depth = [None] * 4
 
                 # Add the channel if it does not already exists, or update the
                 # location or just return the existing station. In any case a
@@ -236,6 +236,18 @@ class WaveformMapper(Component):
 
                 session.commit()
         except Exception, e:
+
+            ################
+            # DEBUGGING START
+            import sys
+            __o_std__ = sys.stdout
+            sys.stdout = sys.__stdout__
+            from IPython.core.debugger import Tracer
+            Tracer(colors="Linux")()
+            sys.stdout = __o_std__
+            # DEBUGGING END
+            ################
+
             # Rollback session.
             session.rollback()
             session.close()
