@@ -21,11 +21,11 @@ class FileDownloadMapper(Component):
     mapping_url = "/event_based_data/downloadFile"
 
     def process_GET(self, request):
-        filepath_id = request.args.get("filepath_id", [])
+        filepath_id = request.args0.get("filepath_id", None)
         if not filepath_id:
             msg = "File with the given id not found."
             raise InvalidParameterError(msg)
-        filepath_id = int(filepath_id[0])
+        filepath_id = int(filepath_id)
         session = self.env.db.session(bind=self.env.db.engine)
         query = session.query(FilepathObject)\
             .filter(FilepathObject.id == filepath_id).first()

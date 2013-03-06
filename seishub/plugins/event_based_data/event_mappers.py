@@ -94,19 +94,12 @@ class EventMapper(Component):
             args = {_i.split("=")[0]: _i.split("=")[1] for _i in args}
         else:
             args = {}
+
         # Somethings remain in the requests args as well.
-        # XXX: Fix this in SeisHub!
-        args.update(request.args)
+        args.update(request.args0)
         event = args.get("event")
-        if isinstance(event, list):
-            event = event[0]
-        width = args.get("width", 150)
-        if isinstance(width, list):
-            width = width[0]
-        width = int(width)
+        width = int(args.get("width", 150))
         facecolor = args.get("color", "red")
-        if isinstance(facecolor, list):
-            facecolor = facecolor[0]
 
         if not event:
             raise InvalidParameterError("'event' parameter missing.")
@@ -125,6 +118,8 @@ class EventMapper(Component):
         result = request.env.db.query(query)
         try:
             result = result.fetchone()
+            if result is None:
+                raise
         except:
             raise NotFoundError("Event %s not found in database" % event)
         result = result

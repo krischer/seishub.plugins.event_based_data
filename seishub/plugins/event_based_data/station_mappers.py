@@ -76,8 +76,8 @@ class StationMapper(Component):
         output the appropriate type.
         """
         # If network and station are given, return details.
-        network = request.args.get("network", [])
-        station = request.args.get("station", [])
+        network = request.args0.get("network", None)
+        station = request.args0.get("station", None)
         if network and station:
             network = network
             station = station
@@ -100,7 +100,7 @@ class StationMapper(Component):
 
         # Encode geojson manually, let the rest be handled by a convenience
         # method.
-        formats = request.args.get("format", [])
+        formats = request.args0.get("format", [])
         if "geojson" in formats:
             result = {"type": "FeatureCollection",
                 "features": []}
@@ -134,7 +134,7 @@ class StationMapper(Component):
         # There are two possibilities for getting data inside the database:
         # upload the file directly to SeisHub or just give a file URL that the
         # server can find.
-        filename = request.args.get("index_file", None)
+        filename = request.args0.get("index_file", None)
 
         # If the 'index_file' parameter is not given, assume the file will be
         # directly uploaded.

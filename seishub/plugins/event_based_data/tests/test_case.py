@@ -94,7 +94,8 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
         if args:
             # Convert everything to strings. The processor usually deals with
             # URL where everything is a string by default.
-            proc.args = {key: str(value) for (key, value) in args.iteritems()}
+            proc.args = {key: [str(value)] for (key, value) in
+                args.iteritems()}
         if file_or_fileobject:
             if not hasattr(file_or_fileobject, "read") or \
                     not hasattr(file_or_fileobject, "seek"):

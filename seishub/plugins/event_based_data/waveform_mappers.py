@@ -93,9 +93,9 @@ class WaveformMapper(Component):
         aforementioned URL.
         """
         # Parse the given parameters.
-        event_id = request.args.get("event", None)
-        is_synthetic = request.args.get("synthetic", None)
-        tag = request.args.get("tag", "")
+        event_id = request.args0.get("event", None)
+        is_synthetic = request.args0.get("synthetic", None)
+        tag = request.args0.get("tag", "")
         if isinstance(is_synthetic, basestring) and \
                 is_synthetic.lower() in lowercase_true_strings:
             is_synthetic = True
@@ -122,7 +122,7 @@ class WaveformMapper(Component):
         # There are two possibilities for getting data inside the database:
         # upload the file directly to SeisHub or just give a file URL that the
         # server can find.
-        filename = request.args.get("index_file", None)
+        filename = request.args0.get("index_file", None)
         # If the 'index_file' parameter is not given, assume the file will be
         # directly uploaded.
         if filename is None:
