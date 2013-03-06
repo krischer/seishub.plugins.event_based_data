@@ -97,11 +97,16 @@ class EventMapper(Component):
         # Somethings remain in the requests args as well.
         # XXX: Fix this in SeisHub!
         args.update(request.args)
-
         event = args.get("event")
+        if isinstance(event, list):
+            event = event[0]
         width = args.get("width", 150)
+        if isinstance(width, list):
+            width = width[0]
         width = int(width)
         facecolor = args.get("color", "red")
+        if isinstance(facecolor, list):
+            facecolor = facecolor[0]
 
         if not event:
             raise InvalidParameterError("'event' parameter missing.")
@@ -118,12 +123,11 @@ class EventMapper(Component):
 
         # Execute the query.
         result = request.env.db.query(query)
-        if result is None:
+        try:
+            result = result.fetchone()
+        except:
             raise NotFoundError("Event %s not found in database" % event)
-
-        result = result.fetchone()
-        if result is None:
-            raise NotFoundError("Event %s not found in database" % event)
+        result = result
 
         # generate correct header
         request.setHeader('content-type', 'image/png; charset=UTF-8')
