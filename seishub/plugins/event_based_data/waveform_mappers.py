@@ -196,8 +196,8 @@ class WaveformMapper(Component):
             time = selected_trace.stats.starttime
             delta = selected_trace.stats.delta
             for value in selected_trace.data:
-                output["data"].append({"time": time.isoformat(), "value":
-                    str(value)})
+                output["data"].append({"time": time.isoformat(),
+                    "value": float(value)})
                 time += delta
             request.setHeader('content-type',
                 'application/json; charset=UTF-8')
