@@ -120,7 +120,7 @@ The event will receive a numerical number if `EVENT_NAME` is not given.
 **Options:**
     * `event`: The name of the event (required)
     * `width`: The width of the returned image (default: `150`)
-    * `facecolor`: The color of the beachball (default: `'red'`)
+    * `color`: The facecolor of the beachball (default: `'red'`)
 
 Will return a png image.
 
@@ -180,3 +180,11 @@ RESP files.
     * `xml`: default
     * `json`
     * `xhtml`
+
+
+## Misc mappers
+
+Internally files are handled via so called filepath ids. Each one refers to an
+existing file. To download it, use the following interface.
+
+`GET BASE/event_based_data/downloadFile?filepath_id=FILEPATH_ID`
