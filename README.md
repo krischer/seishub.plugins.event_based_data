@@ -193,9 +193,9 @@ RESP files.
 * `tag`: Which tag to retrieve. If none is given it will be interpreted as an
     empty tag. This will, by convention, return the raw data from the recording
     station.
-* `format`: The output format (optional). If none is given, the file will be
-    returned in the same format as it was originally uploaded in. Available
-    choices:
+* `format`: The output format (optional). If none is given, the file
+    will be returned in the same format as it was originally uploaded in.
+    Available choices:
         * `mseed`
         * `sac`
         * `gse2` (Only supported for some data types)

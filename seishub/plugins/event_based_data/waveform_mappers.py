@@ -93,12 +93,6 @@ class WaveformMapper(Component):
         tag = request.args0.get("tag", "")
         format = request.args0.get("format", None)
 
-        acceptable_formats = ["mseed", "sac", "gse2", "segy", "raw"]
-        if format and format.lower() not in acceptable_formats:
-            msg = "'%s' is an unsupported format. Supported formats: %s" % \
-                (format, ", ".join(acceptable_formats))
-            raise InvalidParameterError(msg)
-
         # An event id is obviously needed.
         if event_id is None:
             msg = ("No event parameter passed. Every waveform "
@@ -112,6 +106,13 @@ class WaveformMapper(Component):
 
         if channel_id is None and event_id is not None:
             return self.getListForEvent(event_id, request)
+
+        # At this step format will mean a waveform output format.
+        acceptable_formats = ["mseed", "sac", "gse2", "segy", "raw"]
+        if format and format.lower() not in acceptable_formats:
+            msg = "'%s' is an unsupported format. Supported formats: %s" % \
+                (format, ", ".join(acceptable_formats))
+            raise InvalidParameterError(msg)
 
         if channel_id is None:
             msg = ("To download a waveform, 'channel_id' to be specified.")
