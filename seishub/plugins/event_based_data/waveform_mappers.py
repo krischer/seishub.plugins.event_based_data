@@ -12,7 +12,7 @@ import StringIO
 
 from table_definitions import WaveformChannelObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
-    add_filepath_to_database, add_or_update_channel
+    add_filepath_to_database, add_or_update_channel, get_all_tags
 
 lowercase_true_strings = ("true", "yes", "y")
 
@@ -165,6 +165,11 @@ class WaveformMapper(Component):
 
         # Check if the tag is valid, e.g. that it fulfulls the constraints of
         # being unique per channel_id and event.
+        tags = get_all_tags(network, station, location, channel, event_id,
+            self.env)
+        if tag in tags:
+            msg = "Tag already exists for the given channel id and event."
+            raise InvalidParameterError(msg)
 
         if file_is_managed_by_seishub is True:
             # Otherwise create the filename for the file, and check if it
@@ -224,7 +229,7 @@ class WaveformMapper(Component):
                     channel=channel_row, filepath=filepath,
                     event_resource_id=event_id,
                     starttime=stats.starttime.datetime,
-                    endtime=stats.endtime.datetime,
+                    endtime=stats.endtime.datetime, tag=tag,
                     sampling_rate=stats.sampling_rate, format=stats._format,
                     is_synthetic=is_synthetic)
                 session.add(waveform_channel)

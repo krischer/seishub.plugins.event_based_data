@@ -14,8 +14,10 @@ from seishub.core.exceptions import DuplicateObjectError
 import datetime
 import hashlib
 import os
+import sqlalchemy
 
-from table_definitions import ChannelObject, FilepathObject, StationObject
+from table_definitions import ChannelObject, FilepathObject, StationObject, \
+    WaveformChannelObject
 
 
 def check_if_file_exist_in_db(data, env):
@@ -49,18 +51,21 @@ def get_all_tags(network, station, location, channel, event_id, env):
     database for the requested combination.
     """
     session = env.db.session(bind=env.db.engine)
+    # XXX: Figure out how to do this properly with joins and the like.
+    query = session.query(StationObject.id)\
+        .filter(StationObject.network == network)\
+        .filter(StationObject.station == station)
+    try:
+        station_id = query.one()
+    except sqlalchemy.orm.exc.NoResultFound:
+        return []
+
     query = session.query(WaveformChannelObject.tag)\
-        .filter(WaveformChannelObject.channel.station.network == network)\
-        .filter(WaveformChannelObject.channel.station.station == station)\
-        .filter(WaveformChannelObject.channel.location == location)\
-        .filter(WaveformChannelObject.channel.channel == channel)\
+        .join(ChannelObject, ChannelObject.station_id == station_id)\
         .filter(WaveformChannelObject.event_resource_id == event_id)\
-    count = query.count()
-    session.close()
-    if count != 0:
-        msg = "This file already exists in the database."
-        raise DuplicateObjectError(msg)
-    return md5_hash
+        .filter(ChannelObject.location == location)\
+        .filter(ChannelObject.channel == channel)
+    return query.all()
 
 
 def write_string_to_filesystem(filename, string):
