@@ -105,6 +105,9 @@ class WaveformChannelObject(Base):
     trace will have its separate entry, even if they reside in the same file.
     """
     __tablename__ = "ebd_waveform_channels"
+    # A tag is unique per channel id and event
+    __table_args__ = (UniqueConstraint("channel_id", "event_resource_id",
+        "tag"), {})
 
     id = Column(Integer, primary_key=True)
     channel_id = Column(Integer, ForeignKey("ebd_channels.id"), nullable=False)
@@ -112,6 +115,7 @@ class WaveformChannelObject(Base):
         nullable=False)
     # Link it to an actual resource.
     event_resource_id = Column(Integer, nullable=False)
+    tag = Column(String, nullable=False)
     starttime = Column(DateTime, nullable=False)
     endtime = Column(DateTime, nullable=False)
     sampling_rate = Column(Float, nullable=False)
