@@ -10,6 +10,7 @@ A test suite for waveform uploading.
     (http://www.gnu.org/copyleft/lesser.html)
 """
 import datetime
+import json
 from obspy import read
 import os
 from StringIO import StringIO
@@ -320,6 +321,69 @@ class WaveformTestCase(EventBasedDataTestCase):
         tags = get_all_tags(s.network, s.station, s.location, s.channel,
             "example_event", self.env)
         self.assertEqual(tags, [""])
+
+    def test_getListOfWavformsForOneEvent(self):
+        """
+        Tests getting a list of all waveforms for one event.
+        """
+        # Upload an event to be able to refer to one.
+        self._upload_event()
+
+        # Upload some data.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        self._send_request("POST",
+            "/event_based_data/waveform", waveform_file,
+            {"event": "example_event"})
+        session = self.env.db.session(bind=self.env.db.engine)
+        waveform = session.query(WaveformChannelObject).one()
+        self.assertEqual(waveform.tag, "")
+
+        # Uploading the same tag again should fail. This time, slightly modify
+        # the file as otherwise it will not be accepted anyways.
+        waveform_file = os.path.join(self.data_dir, "dis.PFVI..BHE")
+        st = read(waveform_file)
+        st[0].stats.starttime += 2
+        w_file = StringIO()
+        st.write(w_file, format="mseed")
+        w_file.seek(0, 0)
+        self._send_request("POST",
+            "/event_based_data/waveform", w_file,
+            {"event": "example_event", "tag": "modified", "synthetic": "true"})
+
+        # Now get a list of all waveforms for the specified event.
+        response = self._send_request("GET", "/event_based_data/waveform",
+            args={"event": "example_event", "format": "json"})
+        response = json.loads(response)["ResultSet"]["Result"]
+
+        # Assert them. Sort them by tags.
+        response.sort(key=lambda x: x["tag"])
+        self.assertEqual(len(response), 2)
+        response1 = response[0]
+        response2 = response[1]
+
+        self.assertEqual({"channel": "BHE",
+            "endtime": "2012-08-27T05:48:55.985004",
+            "filepath_id": 1,
+            "format": "SAC",
+            "is_synthetic": False,
+            "location": "",
+            "network": "PM",
+            "sampling_rate": 20.0,
+            "starttime": "2012-08-27T04:43:56.035004",
+            "station": "PFVI",
+            "tag": ""}, response1)
+
+        self.assertEqual({"channel": "BHE",
+            "endtime": "2012-08-27T05:48:57.985003",
+            "filepath_id": 2,
+            "format": "MSEED",
+            "is_synthetic": True,
+            "location": "",
+            "network": "PM",
+            "sampling_rate": 20.0,
+            "starttime": "2012-08-27T04:43:58.035003",
+            "station": "PFVI",
+            "tag": "modified"}, response2)
 
 
 def suite():

@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from seishub.core.core import Component, implements
-from seishub.core.exceptions import NotFoundError, InvalidObjectError, \
-    InternalServerError, InvalidParameterError
+from seishub.core.exceptions import InvalidObjectError, InternalServerError, \
+    InvalidParameterError
 from seishub.core.packages.interfaces import IMapper
+from seishub.core.db.util import formatResults
 
 from obspy.core import read
 import os
-from sqlalchemy import Table
 import StringIO
 
 from table_definitions import WaveformChannelObject
 from util import check_if_file_exist_in_db, write_string_to_filesystem, \
-    add_filepath_to_database, add_or_update_channel, get_all_tags
+    add_filepath_to_database, add_or_update_channel, get_all_tags, event_exists
 
 lowercase_true_strings = ("true", "yes", "y")
 
@@ -84,8 +84,44 @@ class WaveformMapper(Component):
         Function that will be called upon receiving a GET request for the
         aforementioned URL.
         """
-        # Get not allowed for this mapper. Return 404.
-        raise NotFoundError("GET not supported for this URL.")
+        # Parse the given parameters.
+        event_id = request.args0.get("event", None)
+
+        # An event id is obviously needed.
+        if event_id is None:
+            msg = ("No event parameter passed. Every waveform "
+                "must be bound to an existing event.")
+            raise InvalidParameterError(msg)
+
+        if not event_exists(event_id, self.env):
+            msg = "The given event resource name '%s' " % event_id
+            msg += "is not known to SeisHub."
+            raise InvalidParameterError(msg)
+
+        # Get all waveform channels corresponding to that id.
+        session = self.env.db.session(bind=self.env.db.engine)
+        query = session.query(WaveformChannelObject)\
+            .filter(WaveformChannelObject.event_resource_id == event_id)\
+            .all()
+        result = []
+        for q in query:
+            chan = q.channel
+            stat = chan.station
+            result.append({
+                "network": stat.network,
+                "station": stat.station,
+                "location": chan.location,
+                "channel": chan.channel,
+                "filepath_id": q.filepath_id,
+                "tag": q.tag,
+                "starttime": q.starttime.isoformat(),
+                "endtime": q.endtime.isoformat(),
+                "sampling_rate": q.sampling_rate,
+                "format": q.format,
+                "is_synthetic": q.is_synthetic})
+
+        result = formatResults(request, result)
+        return result
 
     def process_POST(self, request):
         """
@@ -104,17 +140,11 @@ class WaveformMapper(Component):
 
         # Every waveform MUST be bound to an event.
         if event_id is None:
-            msg = ("No event_resource_name parameter passed. Every waveform "
+            msg = ("No event parameter passed. Every waveform "
                 "must be bound to an existing event.")
             raise InvalidParameterError(msg)
 
-        # Check if the event actually exists in the database.
-        session = self.env.db.session(bind=self.env.db.engine)
-        event_view = Table("/event_based_data/event", request.env.db.metadata,
-            autoload=True)
-        query = session.query(event_view.columns["resource_name"]).filter(
-            event_view.columns["resource_name"] == event_id)
-        if query.count() == 0:
+        if not event_exists(event_id, self.env):
             msg = "The given event resource name '%s' " % event_id
             msg += "is not known to SeisHub."
             raise InvalidParameterError(msg)
