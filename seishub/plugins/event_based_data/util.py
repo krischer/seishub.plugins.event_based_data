@@ -20,6 +20,29 @@ from table_definitions import ChannelObject, FilepathObject, StationObject, \
     WaveformChannelObject
 
 
+def event_exists(event_name, env):
+    """
+    Checks if an event with the given name exists in the database.
+
+    Returns True or False.
+
+    :type event_name: String
+    :param event_name: The name of the event.
+    :type env: seishub.core.Environment
+    :param env: The current SeisHub environment
+    """
+    # Get the event.
+    session = env.db.session(bind=env.db.engine)
+    event_view = sqlalchemy.Table("/event_based_data/event", env.db.metadata,
+        autoload=True)
+    query = session.query(event_view.columns["resource_name"]).filter(
+        event_view.columns["resource_name"] == event_name)
+    count = query.count()
+    session.close()
+
+    return bool(count)
+
+
 def check_if_file_exist_in_db(data, env):
     """
     Checks if a file with the same md5 checksum exists in the filepaths table.
