@@ -30,7 +30,8 @@ course of a tomographic inversion.
     * Python 2.7.x
     * seishub.core
     * ObsPy >= 0.8.3
-    * PIL (only for running the tests)
+    * PIL (only needed for running the tests)
+    * flake8 (only needed for running the tests)
 
 And naturally all dependencies of the listed modules.
 
