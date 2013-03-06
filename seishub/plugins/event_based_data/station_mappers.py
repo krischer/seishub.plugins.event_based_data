@@ -144,8 +144,7 @@ class StationMapper(Component):
             file_is_managed_by_seishub = True
         else:
             filename = os.path.abspath(filename)
-            if not os.path.exists(filename) or \
-                not os.path.isfile(filename):
+            if not os.path.exists(filename) or not os.path.isfile(filename):
                 msg = "File '%s' cannot be found by the SeisHub server." % \
                     filename
                 raise InvalidParameterError(msg)
@@ -306,7 +305,7 @@ class StationMapper(Component):
                     location_code, channel_code = \
                         channel["channel_id"].split(".")[2:]
                     if location_code == info["location_code"] and \
-                        channel_code == info["channel_code"]:
+                            channel_code == info["channel_code"]:
                         info["start_date"] = str(channel["start_date"])
                         info["end_date"] = str(channel["end_date"])
                         info["instrument"] = channel["instrument"]
@@ -390,10 +389,10 @@ def _read_RESP(string_io):
         elif line.startswith("B052F23"):
             current_enddate = _parse_time_string(line.split()[-1])
             if current_network is not None and \
-                current_station is not None and \
-                current_location is not None and \
-                current_channel is not None and \
-                current_startdate is not None:
+                    current_station is not None and \
+                    current_location is not None and \
+                    current_channel is not None and \
+                    current_startdate is not None:
                 channel = {"network": current_network,
                     "station": current_station,
                     "location": current_location,

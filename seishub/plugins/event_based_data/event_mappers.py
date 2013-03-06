@@ -41,7 +41,7 @@ class EventMapper(Component):
             return self.get_event_list(request)
         # getBeachball will return a rendered beachball.
         if len(request.postpath) == 1 and \
-            request.postpath[0].startswith("getBeachball"):
+                request.postpath[0].startswith("getBeachball"):
             return self.get_beachball(request)
         # Otherwise, just pass to the event xml resource handler.
         proc = Processor(self.env)
@@ -114,7 +114,7 @@ class EventMapper(Component):
         # Build up the query.
         query = sql.select([tab.c["Mrr"], tab.c["Mtt"], tab.c["Mpp"],
             tab.c["Mrt"], tab.c["Mrp"], tab.c["Mtp"]]).where(
-            tab.c["resource_name"] == event)
+                tab.c["resource_name"] == event)
 
         # Execute the query.
         result = request.env.db.query(query)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# flake8: noqa
 # Make sure it can run it a non-graphical environment.
 import matplotlib
 matplotlib.use('Agg')

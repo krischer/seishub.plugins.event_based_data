@@ -97,7 +97,7 @@ class WaveformMapper(Component):
         is_synthetic = request.args.get("synthetic", None)
         tag = request.args.get("tag", "")
         if isinstance(is_synthetic, basestring) and \
-            is_synthetic.lower() in lowercase_true_strings:
+                is_synthetic.lower() in lowercase_true_strings:
             is_synthetic = True
         else:
             is_synthetic = False
@@ -111,7 +111,7 @@ class WaveformMapper(Component):
         # Check if the event actually exists in the database.
         session = self.env.db.session(bind=self.env.db.engine)
         event_view = Table("/event_based_data/event", request.env.db.metadata,
-                            autoload=True)
+            autoload=True)
         query = session.query(event_view.columns["resource_name"]).filter(
             event_view.columns["resource_name"] == event_id)
         if query.count() == 0:
@@ -132,7 +132,7 @@ class WaveformMapper(Component):
         else:
             filename = os.path.abspath(filename)
             if not os.path.exists(filename) or \
-                not os.path.isfile(filename):
+                    not os.path.isfile(filename):
                 msg = "File '%s' cannot be found by the SeisHub server." % \
                     filename
                 raise InvalidParameterError(msg)
@@ -212,8 +212,9 @@ class WaveformMapper(Component):
                         local_depth = 0
                     # If any is invalid, assume all are.
                     if -12345.0 in [latitude, longitude, elevation] or \
-                        None in [latitude, longitude, elevation]:
-                        latitude, longitude, elevation, local_depth = [None] * 4
+                            None in [latitude, longitude, elevation]:
+                        latitude, longitude, elevation, local_depth = \
+                            [None] * 4
                 else:
                     latitude, longitude, elevation, local_depth = [None] * 4
 
@@ -236,18 +237,6 @@ class WaveformMapper(Component):
 
                 session.commit()
         except Exception, e:
-
-            ################
-            # DEBUGGING START
-            import sys
-            __o_std__ = sys.stdout
-            sys.stdout = sys.__stdout__
-            from IPython.core.debugger import Tracer
-            Tracer(colors="Linux")()
-            sys.stdout = __o_std__
-            # DEBUGGING END
-            ################
-
             # Rollback session.
             session.rollback()
             session.close()

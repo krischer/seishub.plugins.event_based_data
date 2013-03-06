@@ -117,7 +117,7 @@ def add_filepath_to_database(open_session, filepath, filesize, md5_hash,
 
 
 def add_or_update_channel(open_session, network, station, location, channel,
-    latitude, longitude, elevation, local_depth):
+        latitude, longitude, elevation, local_depth):
     """
     Adds the channel with the given parameters. It will add station and channel
     objects as appropriate. Will add the coordinates to the station if it does
@@ -153,9 +153,9 @@ def add_or_update_channel(open_session, network, station, location, channel,
     # do not pull elevation and local depth from two different sources. This
     # should give the data more integrity.
     if not None in [latitude, longitude, elevation, local_depth] and \
-        (not station_object.latitude or not station_object.longitude or
-        not station_object.elevation_in_m or
-        not station_object.local_depth_in_m):
+            (not station_object.latitude or not station_object.longitude or
+            not station_object.elevation_in_m or
+            not station_object.local_depth_in_m):
         station_object.latitude = latitude
         station_object.longitude = longitude
         station_object.elevation_in_m = elevation

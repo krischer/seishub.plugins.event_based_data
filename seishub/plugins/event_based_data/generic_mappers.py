@@ -10,7 +10,6 @@ import os
 from table_definitions import FilepathObject
 
 
-
 class FileDownloadMapper(Component):
     """
     Download a file with a given filepath id
@@ -44,7 +43,7 @@ class FileDownloadMapper(Component):
         # Set the corresponding headers.
         request.setHeader("content-type", "application/octet-stream")
         filename = os.path.basename(query.filepath).encode("utf-8")
-        request.setHeader("content-disposition",  "attachment; filename=%s" %
+        request.setHeader("content-disposition", "attachment; filename=%s" %
             filename)
 
         return data

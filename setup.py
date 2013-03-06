@@ -31,7 +31,7 @@ setup(
     # You need to define entry points so that SeisHub can find the plugin.
     # Usually something like this is fine.
     entry_points={"seishub.plugins": [
-     "seishub.plugins.event_based_data = seishub.plugins.event_based_data",
-     ]
+        "seishub.plugins.event_based_data = seishub.plugins.event_based_data",
+    ]
     },
 )

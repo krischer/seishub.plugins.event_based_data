@@ -164,7 +164,7 @@ class EventTestCase(EventBasedDataTestCase):
             event_file)
         # Get the image.
         image = self._send_request("GET",
-            "/event_based_data/event/getBeachball?event=TEST_EVENT",
+           "/event_based_data/event/getBeachball?event=TEST_EVENT",
             args={"width": 222})
         # Use pil to check the image.
         im = Image.open(StringIO(image))

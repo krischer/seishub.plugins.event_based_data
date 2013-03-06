@@ -97,7 +97,7 @@ class EventBasedDataTestCase(SeisHubEnvironmentTestCase):
             proc.args = {key: str(value) for (key, value) in args.iteritems()}
         if file_or_fileobject:
             if not hasattr(file_or_fileobject, "read") or \
-                not hasattr(file_or_fileobject, "seek"):
+                    not hasattr(file_or_fileobject, "seek"):
                 with open(file_or_fileobject, "r") as open_file:
                     file_or_fileobject = StringIO.StringIO(open_file.read())
         else:
