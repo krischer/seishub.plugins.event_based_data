@@ -6,6 +6,8 @@ from seishub.core.exceptions import InvalidObjectError, InternalServerError, \
 from seishub.core.packages.interfaces import IMapper
 from seishub.core.db.util import formatResults
 
+from itertools import izip
+import json
 from obspy import read, UTCDateTime
 from obspy.core.util import NamedTemporaryFile
 import os
@@ -108,7 +110,7 @@ class WaveformMapper(Component):
             return self.getListForEvent(event_id, request)
 
         # At this step format will mean a waveform output format.
-        acceptable_formats = ["mseed", "sac", "gse2", "segy", "raw"]
+        acceptable_formats = ["mseed", "sac", "gse2", "segy", "raw", "json"]
         if format and format.lower() not in acceptable_formats:
             msg = "'%s' is an unsupported format. Supported formats: %s" % \
                 (format, ", ".join(acceptable_formats))
@@ -134,11 +136,12 @@ class WaveformMapper(Component):
             raise InvalidParameterError(msg)
 
         query = session.query(WaveformChannelObject)\
-            .join(ChannelObject, ChannelObject.station_id == station_id)\
+            .join(ChannelObject)\
             .filter(WaveformChannelObject.event_resource_id == event_id)\
             .filter(WaveformChannelObject.tag == tag)\
             .filter(ChannelObject.location == location)\
-            .filter(ChannelObject.channel == channel)
+            .filter(ChannelObject.channel == channel)\
+            .filter(ChannelObject.station_id == station_id)
 
         try:
             result = query.one()
@@ -150,6 +153,12 @@ class WaveformMapper(Component):
         if format and format.lower() == "raw":
             with open(result.filepath.filepath, "rb") as open_file:
                 data = open_file.read()
+            # Set the corresponding headers.
+            request.setHeader("content-type", "application/octet-stream")
+            filename = os.path.basename(result.filepath.filepath)\
+                .encode("utf-8")
+            request.setHeader("content-disposition", "attachment; filename=%s"
+                % filename)
             return data
 
         chan = result.channel
@@ -181,6 +190,19 @@ class WaveformMapper(Component):
             msg = "Could not find the corresponding waveform file."
             raise InternalServerError(msg)
 
+        # Deal with json format conversion.
+        if format and format == "json":
+            output = {"channel": selected_trace.id, "data": []}
+            time = selected_trace.stats.starttime
+            delta = selected_trace.stats.delta
+            for value in selected_trace.data:
+                output["data"].append({"time": time.isoformat(), "value":
+                    str(value)})
+                time += delta
+            request.setHeader('content-type',
+                'application/json; charset=UTF-8')
+            return json.dumps(output)
+
         # XXX: Fix some ObsPy modules to be able to write to memory files.
         tempfile = NamedTemporaryFile()
         if format:
@@ -190,6 +212,13 @@ class WaveformMapper(Component):
             data = open_file.read()
         tempfile.close()
         os.remove(tempfile.name)
+
+        # Set the corresponding headers.
+        request.setHeader("content-type", "application/octet-stream")
+        filename = "%s.%s" % (selected_trace.id, default_format.lower())
+        filename = filename.encode("utf-8")
+        request.setHeader("content-disposition", "attachment; filename=%s" %
+            filename)
         return data
 
     def getListForEvent(self, event_id, request):
