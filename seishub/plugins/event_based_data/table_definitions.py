@@ -114,7 +114,7 @@ class WaveformChannelObject(Base):
     filepath_id = Column(Integer, ForeignKey("ebd_filepaths.id"),
         nullable=False)
     # Link it to an actual resource.
-    event_resource_id = Column(Integer, nullable=False)
+    event_resource_id = Column(String, nullable=False)
     tag = Column(String, nullable=False)
     starttime = Column(DateTime, nullable=False)
     endtime = Column(DateTime, nullable=False)

@@ -34,6 +34,12 @@ class WaveformMapper(Component):
     By default the data will be assumed to be real data. Passing
     synthetic=true to the URL will make it a synthetic waveform.
 
+    You can furthermore add a tag to any waveform making it easier to identify
+    it later on. Simple use tag=SOME_TAG to give a short description. Tags have
+    to be unique per channel id and event. Also only one waveform per channel
+    can have no associated tag. This, per convention, should be the raw data
+    stream.
+
     Waveforms will be stored in the path specified in the config file at:
         [event_based_data] waveform_filepath
 
@@ -89,6 +95,7 @@ class WaveformMapper(Component):
         # Parse the given parameters.
         event_id = request.args.get("event", None)
         is_synthetic = request.args.get("synthetic", None)
+        tag = request.args.get("tag", "")
         if isinstance(is_synthetic, basestring) and \
             is_synthetic.lower() in lowercase_true_strings:
             is_synthetic = True
@@ -155,6 +162,9 @@ class WaveformMapper(Component):
         station = st[0].stats.station if st[0].stats.station else "XX"
         location = st[0].stats.location
         channel = st[0].stats.channel if st[0].stats.channel else "XX"
+
+        # Check if the tag is valid, e.g. that it fulfulls the constraints of
+        # being unique per channel_id and event.
 
         if file_is_managed_by_seishub is True:
             # Otherwise create the filename for the file, and check if it

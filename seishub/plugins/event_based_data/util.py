@@ -42,6 +42,27 @@ def check_if_file_exist_in_db(data, env):
     return md5_hash
 
 
+def get_all_tags(network, station, location, channel, event_id, env):
+    """
+    Helper function returning a list of all tags for a given channel and event
+    combination. Does not check if the event actually exists, just querys the
+    database for the requested combination.
+    """
+    session = env.db.session(bind=env.db.engine)
+    query = session.query(WaveformChannelObject.tag)\
+        .filter(WaveformChannelObject.channel.station.network == network)\
+        .filter(WaveformChannelObject.channel.station.station == station)\
+        .filter(WaveformChannelObject.channel.location == location)\
+        .filter(WaveformChannelObject.channel.channel == channel)\
+        .filter(WaveformChannelObject.event_resource_id == event_id)\
+    count = query.count()
+    session.close()
+    if count != 0:
+        msg = "This file already exists in the database."
+        raise DuplicateObjectError(msg)
+    return md5_hash
+
+
 def write_string_to_filesystem(filename, string):
     """
     Takes a given string and writes it to the given filename. Any intermediate
