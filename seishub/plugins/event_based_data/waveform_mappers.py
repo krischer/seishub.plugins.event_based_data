@@ -91,6 +91,7 @@ class WaveformMapper(Component):
         # Parse the given parameters.
         event_id = request.args0.get("event", None)
         channel_id = request.args0.get("channel_id", None)
+        station_id = request.args0.get("station_id", None)
         tag = request.args0.get("tag", "")
         format = request.args0.get("format", None)
 
@@ -105,8 +106,14 @@ class WaveformMapper(Component):
             msg += "is not known to SeisHub."
             raise InvalidParameterError(msg)
 
-        if channel_id is None and event_id is not None:
+        # Returns different things based on parameter combinations.
+        # Return all waveforms available for a given event.
+        if channel_id is None and station_id is None and event_id is not None:
             return self.getListForEvent(event_id, request)
+        # Return all waveforms available for a given event and station id.
+        elif station_id is not None and event_id is not None:
+            return self.getListForStationAndEvent(event_id, station_id,
+                request)
 
         # At this step format will mean a waveform output format.
         acceptable_formats = ["mseed", "sac", "gse2", "segy", "raw", "json"]
@@ -191,11 +198,16 @@ class WaveformMapper(Component):
 
         # Deal with json format conversion.
         if format and format == "json":
-            output = {"channel": selected_trace.id, "data": []}
+            output = [{
+                "channel": selected_trace.id,
+                "sampling_rate": selected_trace.stats.sampling_rate,
+                "npts": selected_trace.stats.npts,
+                "data": []
+            }]
             time = selected_trace.stats.starttime
             delta = selected_trace.stats.delta
             for value in selected_trace.data:
-                output["data"].append({"time": time.isoformat(),
+                output[0]["data"].append({"time": time.isoformat(),
                     "value": float(value)})
                 time += delta
             request.setHeader('content-type',
@@ -226,6 +238,45 @@ class WaveformMapper(Component):
         query = session.query(WaveformChannelObject)\
             .filter(WaveformChannelObject.event_resource_id == event_id)\
             .all()
+        result = []
+        for q in query:
+            chan = q.channel
+            stat = chan.station
+            result.append({
+                "network": stat.network,
+                "station": stat.station,
+                "location": chan.location,
+                "channel": chan.channel,
+                "filepath_id": q.filepath_id,
+                "tag": q.tag,
+                "starttime": q.starttime.isoformat(),
+                "endtime": q.endtime.isoformat(),
+                "sampling_rate": q.sampling_rate,
+                "format": q.format,
+                "is_synthetic": q.is_synthetic})
+
+        result = formatResults(request, result)
+        return result
+
+    def getListForStationAndEvent(self, event_id, station_id, request):
+        split_station = station_id.split(".")
+        if len(split_station) != 2:
+            msg = "'station_id' has to be of the form NET.STA"
+            raise InvalidParameterError(msg)
+        network, station = split_station
+        print network, station
+
+        session = self.env.db.session(bind=self.env.db.engine)
+        stat_id = get_station_id(network, station, session)
+        if stat_id is False:
+            msg = "Could not find station '%s'" % station_id
+            raise InvalidParameterError(msg)
+
+        query = session.query(WaveformChannelObject)\
+            .join(ChannelObject)\
+            .filter(WaveformChannelObject.event_resource_id == event_id)\
+            .filter(ChannelObject.station_id == stat_id).all()
+
         result = []
         for q in query:
             chan = q.channel

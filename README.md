@@ -185,6 +185,15 @@ RESP files.
     * `json`
     * `xhtml`
 
+#### Get a list of all waveforms available at a given station
+`GET BASE/event_based_data/waveform?event=EVENT_NAME&station_id=NET.STA`
+
+**Options:**
+* `format`: Determines the format of the list.
+    * `xml`: default
+    * `json`
+    * `xhtml`
+
 #### Get a waveform file
 `GET BASE/event_based_data/waveform?event=EVENT_NAME&channel_id=NET.STA.LOC.CHA`
 
@@ -203,7 +212,26 @@ RESP files.
         * `raw` - This one is special. It will simply return the raw,
             originally uploaded data. In the case of multicomponent files it
             will return a file containing all these components.
+        * `json` - Returns a json representation of the data. Very useful for
+            plotting inside a web application. Please only use for small time
+            series as it is rather verbose and expensive. Will return a JSON
+            representation akin to the following:
 
+            ```json
+            [
+              {
+                "sampling_rate": 2.0,
+                "channel": "CA.FBR..E",
+                "npts": 1500,
+                "data": [
+                  {"value": 0.0, "time": "2009-04-06T01:32:00"},
+                  {"value": 0.0, "time": "2009-04-06T01:32:00.500000"},
+                  ...
+                ]
+              },
+              ... next trace ...
+            ]
+            ```
 
 
 ## Misc mappers
