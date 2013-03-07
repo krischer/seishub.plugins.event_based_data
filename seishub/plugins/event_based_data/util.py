@@ -150,13 +150,16 @@ def add_filepath_to_database(open_session, filepath, filesize, md5_hash,
 
 
 def add_or_update_channel(open_session, network, station, location, channel,
-        latitude, longitude, elevation, local_depth):
+        latitude, longitude, elevation, local_depth, force_update=False):
     """
     Adds the channel with the given parameters. It will add station and channel
     objects as appropriate. Will add the coordinates to the station if it does
     not have coordinates yet.
 
     Returns the channel object from SQLAlchemy's ORM.
+
+    :param force_update: If True, always overwrite everything, otherwise only
+        write previously not-existing values.
     """
     # Find the potentially already existing station in the database, otherwise
     # create it. In any case, the station_object variable will contain the
@@ -182,16 +185,18 @@ def add_or_update_channel(open_session, network, station, location, channel,
     else:
         channel_object = channel_query.one()
 
-    # Only ever update the coordinates if they come from a single source thus
-    # do not pull elevation and local depth from two different sources. This
-    # should give the data more integrity.
-    if not None in [latitude, longitude, elevation, local_depth] and \
-            (not station_object.latitude or not station_object.longitude or
-            not station_object.elevation_in_m or
-            not station_object.local_depth_in_m):
+    # Update only if either not set or force_update is True
+    if latitude is not None and (not station_object.latitude or force_update is
+            True):
         station_object.latitude = latitude
+    if longitude is not None and (not station_object.longitude or force_update
+            is True):
         station_object.longitude = longitude
+    if elevation is not None and (not station_object.elevation_in_m or
+            force_update is True):
         station_object.elevation_in_m = elevation
+    if local_depth is not None and (not station_object.local_depth_in_m or
+            force_update is True):
         station_object.local_depth_in_m = local_depth
 
     # Add both to the open session.

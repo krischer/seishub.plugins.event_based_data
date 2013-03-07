@@ -6,7 +6,6 @@ from seishub.core.exceptions import InvalidObjectError, InternalServerError, \
 from seishub.core.packages.interfaces import IMapper
 from seishub.core.db.util import formatResults
 
-from itertools import izip
 import json
 from obspy import read, UTCDateTime
 from obspy.core.util import NamedTemporaryFile
@@ -356,19 +355,14 @@ class WaveformMapper(Component):
                 # Extract coordinates if it is a sac file. Else set them to
                 # None.
                 if hasattr(stats, "sac"):
-                    latitude = stats.sac.stla
-                    longitude = stats.sac.stlo
-                    elevation = stats.sac.stel
-                    local_depth = stats.sac.stdp
-                    # Treat local_depth seperately. If it is not given, assume
-                    # it is 0.
-                    if local_depth == -12345.0:
-                        local_depth = 0
-                    # If any is invalid, assume all are.
-                    if -12345.0 in [latitude, longitude, elevation] or \
-                            None in [latitude, longitude, elevation]:
-                        latitude, longitude, elevation, local_depth = \
-                            [None] * 4
+                    # Invalid floating point value according to the sac
+                    # definition.
+                    iv = -12345.0
+                    sac = stats.sac
+                    latitude = sac.stla if sac.stla != iv else None
+                    longitude = sac.stlo if sac.stlo != iv else None
+                    elevation = sac.stel if sac.stel != iv else None
+                    local_depth = sac.stdp if sac.stdp != iv else None
                 else:
                     latitude, longitude, elevation, local_depth = [None] * 4
 

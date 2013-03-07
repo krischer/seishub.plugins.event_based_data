@@ -206,7 +206,8 @@ class StationMapper(Component):
                     channel["network"], channel["station"],
                     channel["location"], channel["channel"],
                     channel["latitude"], channel["longitude"],
-                    channel["elevation"], channel["local_depth"])
+                    channel["elevation"], channel["local_depth"],
+                    force_update=True)
 
                 # Now add information about the time span of the current
                 # channel information.
@@ -274,21 +275,23 @@ class StationMapper(Component):
             "channels": []}
         # Also parse information about all channels.
         for channel in query.channel:
-            md = channel.channel_metadata[0]
+            md = channel.channel_metadata
+            if md:
+                md = md[0]
 
             info = {
                 "channel_code": channel.channel,
                 "location_code": channel.location,
-                "start_date": str(md.starttime),
-                "end_date": str(md.starttime),
+                "start_date": str(md.starttime) if md else None,
+                "end_date": str(md.starttime) if md else None,
                 "instrument": "",
                 "sampling_rate": "",
-                "format": md.format,
-                "channel_filepath_id": md.filepath_id}
+                "format": md.format if md else None,
+                "channel_filepath_id": md.filepath_id if md else None}
 
             # Attempt to get long descriptions for the station and network
             # codes. This is only possible for SEED and XSEED files.
-            if info["format"].lower() in ["seed", "xseed"]:
+            if info["format"] and info["format"].lower() in ["seed", "xseed"]:
                 parser = Parser(md.filepath.filepath)
                 inv = parser.getInventory()
                 if not result["network_name"] and inv["networks"]:
