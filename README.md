@@ -9,18 +9,27 @@ waveforms.  Waveforms are always bound to an earthquake (or potentially an
 earthquake group) - the natural interpretation being that the waveform recorded
 the earthquake.
 
-Waveforms can be described in more detail with the help of three additional
-pieces:
+Every uploaded waveform has to be bound to a preexisting event. To be able to
+differentiate waveforms for the same event and the same channel the plugin
+currently employs two additional fields per waveform:
+
+* **is_synthetic**: A simple flag
+* **tag**: A short tag describing the waveform. The empty tag, by convention, is
+  reserved for the raw, recorded waveform.
+
+In the future, the plugin will be expanded to allow for more detailed waveform
+descriptions. The current plan is to describe all waveforms (in addition to the
+two fields described above) with the help of three files:
 
 * **Station metadata** -> Sufficient to fully describe raw waveforms
 * **Processing.xml** -> A (yet-to-be-defined) XML format detailing the (signal)
-  processing that has been applied to the waveform.
+  processing that has been applied to the waveform. **Not yet implemented**
 * **Synthetic.xml** -> A (yet-to-be-defined) XML format detailing the origin of
   the waveform. This mostly means the solver used to generate the waveform, the
-  mesh and model it operated on and other parameters.
+  mesh and model it operated on and other parameters. **Not yet implemented**
 
 The combined usage of these three resources and the event they are bound to
-should be able to completely describe any waveform that occurs e.g. in the
+should be able to completely describe any waveform that occurs, e.g. in the
 course of a tomographic inversion.
 
 ## Installation
@@ -39,7 +48,7 @@ And naturally all dependencies of the listed modules.
 
 ```bash
 pip install .
-``
+```
 
 or  (if you prefer it)
 
@@ -97,7 +106,7 @@ format is accepted.
 
 `POST BASE/event_based_data/event/EVENT_NAME`
 
-The event will receive a numerical number if `EVENT_NAME` is not given.
+The event will receive a numerical name if `EVENT_NAME` is not given.
 
 ### Retrieve an event
 
@@ -153,7 +162,7 @@ events. Currently the following file formats are supported:
 
 ## Waveform data
 
-Waveform data can be uploaded in any format supported by ObsPy. Furhtermore
+Waveform data can be uploaded in any format supported by ObsPy. Furthermore
 every waveform file must be bound to an already existing event. Otherwise, an
 error will be raised. SAC files are special in that they contain coordinates.
 They will be extracted upon uploading and matched with information coming from
@@ -205,33 +214,33 @@ RESP files.
 * `format`: The output format (optional). If none is given, the file
     will be returned in the same format as it was originally uploaded in.
     Available choices:
-        * `mseed`
-        * `sac`
-        * `gse2` (Only supported for some data types)
-        * `segy` (Only supported for some data types)
-        * `raw` - This one is special. It will simply return the raw,
+   * `mseed`
+   * `sac`
+   * `gse2` (Only supported for some data types)
+   * `segy` (Only supported for some data types)
+   * `raw` - This one is special. It will simply return the raw,
             originally uploaded data. In the case of multicomponent files it
             will return a file containing all these components.
-        * `json` - Returns a json representation of the data. Very useful for
+   * `json` - Returns a JSON representation of the data. Very useful for
             plotting inside a web application. Please only use for small time
             series as it is rather verbose and expensive. Will return a JSON
             representation akin to the following:
 
-            ```json
-            [
-              {
-                "sampling_rate": 2.0,
-                "channel": "CA.FBR..E",
-                "npts": 1500,
-                "data": [
-                  {"value": 0.0, "time": "2009-04-06T01:32:00"},
-                  {"value": 0.0, "time": "2009-04-06T01:32:00.500000"},
-                  ...
-                ]
-              },
-              ... next trace ...
-            ]
-            ```
+```json
+[
+  {
+    "sampling_rate": 2.0,
+    "channel": "CA.FBR..E",
+    "npts": 1500,
+    "data": [
+      {"value": 0.0, "time": "2009-04-06T01:32:00"},
+      {"value": 0.0, "time": "2009-04-06T01:32:00.500000"},
+      ...
+    ]
+  },
+  ... next trace ...
+]
+```
 
 
 ## Misc mappers
