@@ -10,6 +10,7 @@ import json
 from obspy.core import UTCDateTime
 from obspy.xseed import Parser
 import os
+import sqlalchemy
 from sqlalchemy.exc import IntegrityError
 import StringIO
 
@@ -253,11 +254,12 @@ class StationMapper(Component):
 
     def get_station_details(self, request, network, station):
         session = self.env.db.session(bind=self.env.db.engine)
-        query = session.query(StationObject)\
-            .filter(StationObject.network == network)\
-            .filter(StationObject.station == station)\
-            .first()
-        if not query:
+        try:
+            query = session.query(StationObject)\
+                .filter(StationObject.network == network)\
+                .filter(StationObject.station == station).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            session.close()
             msg = "Station %s.%s could not be found." % (network, station)
             raise NotFoundError(msg)
         result = {
@@ -311,6 +313,7 @@ class StationMapper(Component):
                         info["instrument"] = channel["instrument"]
                         info["sampling_rate"] = channel["sampling_rate"]
             result["channels"].append({"channel": info})
+        session.close()
         return formatResults(request, [result])
 
 
