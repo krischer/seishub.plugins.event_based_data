@@ -96,10 +96,11 @@ def get_all_tags(network, station, location, channel, event_id, env):
         return []
 
     query = session.query(WaveformChannelObject.tag)\
-        .join(ChannelObject, ChannelObject.station_id == station_id)\
+        .join(ChannelObject)\
         .filter(WaveformChannelObject.event_resource_id == event_id)\
         .filter(ChannelObject.location == location)\
-        .filter(ChannelObject.channel == channel)
+        .filter(ChannelObject.channel == channel)\
+        .filter(ChannelObject.station_id == station_id)
     return [_i[0] for _i in query.all()]
 
 

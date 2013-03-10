@@ -198,17 +198,16 @@ class WaveformMapper(Component):
 
         # Deal with json format conversion.
         if format and format == "json":
-            output = [{
+            output = {
                 "channel": selected_trace.id,
                 "sampling_rate": selected_trace.stats.sampling_rate,
                 "npts": selected_trace.stats.npts,
                 "data": []
-            }]
+            }
             time = selected_trace.stats.starttime
             delta = selected_trace.stats.delta
             for value in selected_trace.data:
-                output[0]["data"].append({"time": time.isoformat(),
-                    "value": float(value)})
+                output["data"].append([time.isoformat(), float(value)])
                 time += delta
             request.setHeader('content-type',
                 'application/json; charset=UTF-8')

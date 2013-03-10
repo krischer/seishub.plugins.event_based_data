@@ -227,19 +227,16 @@ RESP files.
             representation akin to the following:
 
 ```json
-[
-  {
-    "sampling_rate": 2.0,
-    "channel": "CA.FBR..E",
-    "npts": 1500,
-    "data": [
-      {"value": 0.0, "time": "2009-04-06T01:32:00"},
-      {"value": 0.0, "time": "2009-04-06T01:32:00.500000"},
-      ...
-    ]
-  },
-  ... next trace ...
-]
+{
+  "sampling_rate": 2.0,
+  "channel": "CA.FBR..E",
+  "npts": 1500,
+  "data": [
+    ["2009-04-06T01:32:00", 1.0],
+    ["2009-04-06T01:32:00.500000", 2.0],
+    ...
+  ]
+}
 ```
 
 
